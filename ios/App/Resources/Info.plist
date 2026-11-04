@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>iContain</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.mirazbakis.icontain</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>icontain</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>iOS App</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.apple.itunes.ipa</string>
+				<string>com.apple.xcode.archive</string>
+				<string>com.apple.application-bundle</string>
+				<string>public.zip-archive</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.apple.itunes.ipa</string>
+			<key>UTTypeDescription</key>
+			<string>iOS App Archive</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.zip-archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>ipa</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>icontain</string>
+		<string>localdevvpn</string>
+	</array>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>iContain connects to this iPhone through LocalDevVPN to simulate its location. Apps running in iContain may also use the local network.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>An app running in iContain wants to use your location.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>An app running in iContain wants to use your location.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>An app running in iContain wants to use the camera.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>An app running in iContain wants to use the microphone.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>An app running in iContain wants to use your photos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>An app running in iContain wants to save to your photos.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>An app running in iContain wants to use your contacts.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>An app running in iContain wants to use your calendars.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>An app running in iContain wants to use your reminders.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>An app running in iContain wants to use Bluetooth.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>An app running in iContain wants to use motion data.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>An app running in iContain wants to use Face ID.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>An app running in iContain wants to use speech recognition.</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>An app running in iContain wants to use your media library.</string>
+</dict>
+</plist>

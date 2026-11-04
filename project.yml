@@ -1,0 +1,34 @@
+name: iContain
+options:
+  bundleIdPrefix: com.mirazbakis
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+
+targets:
+  iContain:
+    type: application
+    platform: iOS
+    sources:
+      - path: ios/App
+    dependencies:
+      - framework: iContainFFI.xcframework
+        embed: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mirazbakis.icontain
+        INFOPLIST_FILE: ios/App/Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        SWIFT_OBJC_BRIDGING_HEADER: ios/App/iContain-Bridging-Header.h
+        OTHER_LDFLAGS: "-lc++"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Guests are loaded with dlopen and share this process's symbols.
+        DEAD_CODE_STRIPPING: NO

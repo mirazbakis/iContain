@@ -1,0 +1,4 @@
+module iContainFFI {
+    header "icontain.h"
+    export *
+}
