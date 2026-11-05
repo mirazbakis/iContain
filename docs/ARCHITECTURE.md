@@ -21,6 +21,8 @@ iContain/
 │   ├── Core/                models and services (GuestStore, AppleAccount, DeviceProfiles, …)
 │   ├── Features/            the four tabs: Apps, Location, Account, Settings
 │   └── UI/Theme.swift       colours, Liquid Glass panels and buttons
+├── site/                    the website (GitHub Pages), with ad images in site/ads/
+├── marketing/               ad template (ad.html) and ready-to-paste ad copy
 ├── tests/Probe/             test app that shows what it sees from inside iContain
 ├── scripts/                 build, packaging, Simulator test and icon scripts
 ├── docs/                    this file, release notes, README assets
@@ -93,6 +95,10 @@ Hooks are only ever added on the class they're meant for (`UIWindow`, not `UIVie
 1. Set `MARKETING_VERSION` (and bump `CURRENT_PROJECT_VERSION`) in `project.yml`.
 2. Write `docs/releases/vX.Y.Z.md` and add the version to `CHANGELOG.md`.
 3. Run **Actions › Build IPA** with **Release** and the tag.
+
+## Website and ads
+
+`site/` is published by `.github/workflows/pages.yml` whenever it changes on `main` (Settings › Pages › Source: GitHub Actions). Its screenshots are in `site/assets/`. After changing `marketing/ad.html` or the screenshots, run `./scripts/render-ads.sh` to remake `site/ads/`.
 
 ## Roadmap
 

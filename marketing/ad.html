@@ -1,0 +1,82 @@
+<!doctype html>
+<!-- iContain ad template. scripts/render-ads.sh renders it at three sizes:
+     ?f=og (1200x630), ?f=square (1080x1080), ?f=story (1080x1920). -->
+<html><head><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif; color: #f4f6ff;
+    background:
+      radial-gradient(60% 50% at 85% 0%, rgba(79,127,240,.42), transparent 70%),
+      radial-gradient(55% 45% at 0% 60%, rgba(140,107,217,.30), transparent 70%),
+      linear-gradient(180deg, #262b45, #0e1020 60%, #0a0c18);
+    -webkit-font-smoothing: antialiased;
+  }
+  .ad { position: relative; width: 100%; height: 100%; display: flex; }
+  .copy { display: flex; flex-direction: column; justify-content: center; }
+  .brand { display: flex; align-items: center; gap: .45em; font-weight: 700; letter-spacing: -.01em; }
+  .brand img { border-radius: 22%; box-shadow: 0 10px 30px -10px rgba(79,127,240,.8); }
+  h1 { letter-spacing: -.04em; line-height: .98; }
+  .grad { background: linear-gradient(100deg, #a7c0ff, #6f8ff5 50%, #b195ee); -webkit-background-clip: text; color: transparent; }
+  p { color: rgba(232,236,255,.72); line-height: 1.4; }
+  .pills { display: flex; gap: .5em; flex-wrap: wrap; }
+  .pill {
+    padding: .45em .95em; border-radius: 999px; font-weight: 600;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
+  }
+  .pill.blue { background: linear-gradient(180deg,#6a93ff,#3f6fe6); border-color: rgba(255,255,255,.3); }
+  .url { color: rgba(232,236,255,.55); font-weight: 600; }
+  .phone {
+    aspect-ratio: 1206/2622; border-radius: 13.5% / 6.2%; padding: 2.6%; background: #05060c;
+    border: 2px solid rgba(255,255,255,.18); box-shadow: 0 40px 90px -30px #000;
+  }
+  .phone img { width: 100%; height: 100%; object-fit: cover; border-radius: 11% / 5.1%; display: block; }
+
+  /* 1200x630 link card */
+  .og .copy { padding: 0 0 0 76px; width: 60%; gap: 22px; }
+  .og .brand { font-size: 30px; } .og .brand img { width: 56px; }
+  .og h1 { font-size: 78px; } .og p { font-size: 25px; max-width: 560px; } .og .pills { font-size: 19px; }
+  .og .phones { position: absolute; right: 40px; top: 70px; display: flex; gap: 22px; }
+  .og .phone { width: 225px; } .og .phone.b { margin-top: 70px; }
+
+  /* 1080x1080 square */
+  .square { flex-direction: column; align-items: center; text-align: center; padding-top: 86px; }
+  .square .copy { align-items: center; gap: 24px; }
+  .square .brand { font-size: 34px; } .square .brand img { width: 64px; }
+  .square h1 { font-size: 96px; } .square p { font-size: 30px; max-width: 800px; } .square .pills { font-size: 22px; justify-content: center; }
+  .square .phones { position: absolute; bottom: -260px; display: flex; gap: 30px; align-items: flex-start; }
+  .square .phone { width: 300px; } .square .phone.a, .square .phone.c { margin-top: 90px; opacity: .9; }
+
+  /* 1080x1920 story */
+  .story { flex-direction: column; align-items: center; text-align: center; padding-top: 170px; }
+  .story .copy { align-items: center; gap: 32px; }
+  .story .brand { font-size: 44px; } .story .brand img { width: 88px; }
+  .story h1 { font-size: 132px; } .story p { font-size: 40px; max-width: 880px; } .story .pills { font-size: 30px; justify-content: center; }
+  .story .phones { position: absolute; bottom: -120px; display: flex; gap: 34px; align-items: flex-start; }
+  .story .phone { width: 380px; } .story .phone.a, .story .phone.c { margin-top: 120px; opacity: .9; }
+  .story .url { position: absolute; top: 80px; font-size: 30px; }
+</style></head>
+<body>
+<div class="ad" id="ad">
+  <div class="copy">
+    <div class="brand"><img src="../site/assets/icon.png" alt="">iContain</div>
+    <h1>Every app.<br><span class="grad">One container.</span></h1>
+    <p>Run apps and iOS Simulator builds inside one app on your iPhone. Test as any device, anywhere.</p>
+    <div class="pills"><span class="pill blue">Free</span><span class="pill">Open source</span><span class="pill">iOS 18+</span></div>
+  </div>
+  <div class="phones">
+    <div class="phone a"><img src="../site/assets/welcome.jpg" alt=""></div>
+    <div class="phone b"><img src="../site/assets/apps.jpg" alt=""></div>
+    <div class="phone c"><img src="../site/assets/location.jpg" alt=""></div>
+  </div>
+  <div class="url">mirazbakis.github.io/iContain</div>
+</div>
+<script>
+  const f = new URLSearchParams(location.search).get("f") || "og";
+  document.getElementById("ad").classList.add(f);
+  // The link card fits two phones; the others show three.
+  if (f === "og") document.querySelector(".phone.c").remove();
+  if (f !== "story") document.querySelector(".url").remove();
+</script>
+</body></html>
