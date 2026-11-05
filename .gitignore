@@ -4,3 +4,7 @@ build/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 DerivedData/
 .DS_Store
+
+# Generated: scripts/build-rust.sh and `xcodegen generate` recreate these.
+iContainFFI.xcframework/
+iContain.xcodeproj/
