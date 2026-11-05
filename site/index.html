@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>iContain: every app, one container</title>
 <meta name="description" content="Run apps inside one app on your iPhone, including builds made for the iOS Simulator. Test as any iPhone or iPad, simulate your location, free and open source.">
-<meta name="theme-color" content="#14172a">
+<meta name="theme-color" content="#f3f4f7">
 <meta property="og:title" content="iContain: every app, one container">
 <meta property="og:description" content="Run apps, including iOS Simulator builds, inside one app on your iPhone. Free and open source.">
 <meta property="og:image" content="https://mirazbakis.github.io/iContain/ads/og.png">
@@ -14,282 +14,224 @@
 <link rel="icon" href="assets/icon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <style>
+  /* A technical drawing: paper, a faint grid, hairlines, ink and one blue. */
   :root {
-    --bg: #0e1020;
-    --bg-2: #171a2e;
-    --ink: #f4f6ff;
-    --ink-2: rgba(232, 236, 255, .68);
-    --ink-3: rgba(232, 236, 255, .45);
-    --blue: #4f7ff0;
-    --blue-2: #7aa2ff;
-    --violet: #8c6bd9;
-    --glass: rgba(255, 255, 255, .06);
-    --glass-hi: rgba(255, 255, 255, .11);
-    --stroke: rgba(255, 255, 255, .13);
-    --radius: 26px;
-    --max: 1120px;
+    --paper: #f3f4f7;
+    --sheet: #ffffff;
+    --ink: #0c0e18;
+    --ink-2: #4a4f60;
+    --ink-3: #8a8fa0;
+    --line: #d9dce5;
+    --grid: rgba(12, 14, 24, .045);
+    --blue: #2f5fe0;
+    --blue-soft: #e6ecfd;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --max: 1160px;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
   body {
-    margin: 0;
+    margin: 0; color: var(--ink); background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 32px 32px;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-    color: var(--ink);
-    background: var(--bg);
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-  /* The app's slate with its blue and violet glows. */
-  body::before {
-    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background:
-      radial-gradient(48rem 34rem at 82% -6%, rgba(79, 127, 240, .30), transparent 70%),
-      radial-gradient(42rem 30rem at -8% 38%, rgba(140, 107, 217, .20), transparent 70%),
-      radial-gradient(40rem 30rem at 70% 100%, rgba(79, 127, 240, .14), transparent 70%),
-      linear-gradient(180deg, #23283f 0%, var(--bg) 46%, #0b0d19 100%);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
   a { color: inherit; }
   img { display: block; max-width: 100%; }
-  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
-  .glass {
-    background: var(--glass);
-    border: 1px solid var(--stroke);
-    border-radius: var(--radius);
-    backdrop-filter: blur(22px) saturate(160%);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10), 0 18px 50px -24px rgba(0, 0, 0, .7);
-  }
+  code, .mono { font-family: var(--mono); }
+  code { font-size: .88em; background: var(--blue-soft); color: var(--blue); padding: .1em .38em; border-radius: 5px; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+  .label { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .label b { color: var(--blue); font-weight: 600; }
 
-  /* Nav */
-  nav {
-    position: sticky; top: 0; z-index: 20;
-    backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%);
-    background: rgba(14, 16, 32, .55);
-    border-bottom: 1px solid rgba(255, 255, 255, .06);
-  }
-  nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; letter-spacing: -.01em; }
-  .brand img { width: 30px; height: 30px; border-radius: 8px; }
-  nav .links { display: flex; gap: 22px; margin-left: auto; font-size: 14px; }
+  /* Nav: a ruled strip. */
+  nav { position: sticky; top: 0; z-index: 20; background: var(--paper); border-bottom: 1px solid var(--line); transition: opacity .3s ease; }
+  nav .wrap { display: flex; align-items: center; height: 58px; gap: 28px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 750; text-decoration: none; letter-spacing: -.02em; font-size: 17px; }
+  .brand img { width: 28px; height: 28px; border-radius: 7px; }
+  .brand .v { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--ink-3); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+  nav .links { display: flex; gap: 24px; margin-left: auto; font-size: 14px; }
   nav .links a { text-decoration: none; color: var(--ink-2); }
   nav .links a:hover { color: var(--ink); }
 
-  /* Buttons */
   .btn {
-    display: inline-flex; align-items: center; gap: 9px; justify-content: center;
-    padding: 13px 22px; border-radius: 999px; font-weight: 600; font-size: 15px;
-    text-decoration: none; border: 1px solid var(--stroke); cursor: pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    display: inline-flex; align-items: center; gap: 9px; padding: 12px 18px; border-radius: 10px;
+    font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid var(--ink);
+    transition: transform .12s ease, background .15s ease;
   }
-  .btn:hover { transform: translateY(-1px); }
-  .btn:active { transform: translateY(1px) scale(.98); }
-  .btn.primary {
-    background: linear-gradient(180deg, #6a93ff, #3f6fe6);
-    border-color: rgba(255, 255, 255, .25); color: #fff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 10px 30px -10px rgba(79, 127, 240, .8);
-  }
-  .btn.primary:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 14px 38px -10px rgba(79, 127, 240, 1); }
-  .btn.ghost { background: var(--glass); color: var(--ink); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .btn.ghost:hover { background: var(--glass-hi); }
-  .btn svg { width: 18px; height: 18px; }
-  nav .btn { padding: 8px 15px; font-size: 13px; }
+  .btn:active { transform: translateY(1px); }
+  .btn.solid { background: var(--ink); color: #fff; }
+  .btn.solid:hover { background: #1f2333; }
+  .btn.line { background: var(--sheet); color: var(--ink); }
+  .btn.line:hover { background: var(--blue-soft); }
+  .btn svg { width: 17px; height: 17px; }
+  nav .btn { padding: 7px 13px; font-size: 13px; border-radius: 8px; }
 
-  /* Hero */
-  .hero { padding: 72px 0 40px; text-align: center; }
-  .eyebrow {
-    display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border-radius: 999px;
-    font-size: 13px; color: var(--ink-2); margin-bottom: 22px;
-  }
-  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue-2); box-shadow: 0 0 12px var(--blue); }
-  h1 {
-    font-size: clamp(42px, 7.4vw, 84px); line-height: 1.02; letter-spacing: -.035em; margin: 0 auto 20px; max-width: 900px;
-  }
-  .grad { background: linear-gradient(100deg, #9db8ff 0%, #6f8ff5 45%, #a88ce8 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .lede { font-size: clamp(17px, 2.2vw, 21px); line-height: 1.5; color: var(--ink-2); max-width: 680px; margin: 0 auto 32px; }
-  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .meta { margin-top: 16px; font-size: 13px; color: var(--ink-3); }
+  /* Intro: the icon on the drawing board; scrolling opens it. */
+  .intro { height: 320vh; position: relative; }
+  .intro .stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; display: grid; place-items: center; }
+  .cross { position: absolute; inset: 0; pointer-events: none; }
+  .cross::before, .cross::after { content: ""; position: absolute; background: rgba(47, 95, 224, .18); }
+  .cross::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+  .cross::after { top: 50%; left: 0; right: 0; height: 1px; }
+  .cicon { --s: min(40vmin, 280px); position: absolute; width: var(--s); height: var(--s); }
+  .cicon .shell { position: absolute; inset: 0; border-radius: 22.5%; background: linear-gradient(180deg, #8890b4, #3e4563); box-shadow: 0 30px 60px -28px rgba(12, 14, 40, .55); }
+  .cicon .slab, .cicon .tiles { position: absolute; inset: 17%; border-radius: 24%; }
+  .cicon .slab { background: linear-gradient(180deg, #e3e6f4, #aab0cd); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .8); }
+  .cicon .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 7%; padding: 9%; }
+  .tile { border-radius: 30%; display: grid; place-items: center; background: linear-gradient(180deg, #bcc1d9, #969cb9); box-shadow: inset 0 calc(var(--s) * .018) calc(var(--s) * .03) rgba(20, 24, 50, .4); }
+  .knob { width: 40%; aspect-ratio: 1; border-radius: 50%; background: linear-gradient(180deg, #fff, #dde1f0); box-shadow: 0 calc(var(--s) * .012) calc(var(--s) * .025) rgba(10, 14, 30, .4); }
+  .knob.live { background: linear-gradient(180deg, #9cc0ff, #3f74ee); }
+  .dim { position: absolute; font-family: var(--mono); font-size: 12px; color: var(--blue); letter-spacing: .06em; }
+  .wordmark { position: absolute; text-align: center; opacity: 0; padding: 0 16px; }
+  .wordmark .name { font-size: clamp(72px, 16vw, 200px); font-weight: 850; letter-spacing: -.065em; line-height: .9; }
+  .wordmark .name .i { color: var(--blue); }
+  .wordmark .tag { margin-top: 20px; font-family: var(--mono); font-size: clamp(12px, 1.6vw, 15px); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+  .scrollhint { position: absolute; bottom: 30px; font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--ink-3); display: grid; justify-items: center; gap: 6px; }
+  .scrollhint i { width: 1px; height: 34px; background: linear-gradient(var(--ink-3), transparent); animation: drop 1.6s ease-in-out infinite; }
+  @keyframes drop { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+  body.intro-on nav { opacity: 0; pointer-events: none; }
 
-  /* Phones */
-  .phones { position: relative; height: 640px; margin-top: 56px; }
-  .phone {
-    position: absolute; left: 50%; top: 0; width: 280px; aspect-ratio: 1206 / 2622;
-    border-radius: 46px; padding: 9px; background: #05060c;
-    border: 1px solid rgba(255, 255, 255, .16);
-    box-shadow: inset 0 0 0 2px #1d2033, 0 40px 90px -30px rgba(0, 0, 0, .9), 0 0 0 1px rgba(0, 0, 0, .5);
-  }
-  .phone img { width: 100%; height: 100%; object-fit: cover; border-radius: 38px; }
-  .phone.mid { transform: translateX(-50%); z-index: 3; }
-  .phone.left { transform: translateX(-118%) translateY(52px) rotate(-7deg) scale(.9); z-index: 2; opacity: .92; }
-  .phone.right { transform: translateX(18%) translateY(52px) rotate(7deg) scale(.9); z-index: 2; opacity: .92; }
+  /* Hero: left-aligned, with an annotated screenshot. */
+  .hero { padding: 84px 0 40px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center; }
+  h1 { font-size: clamp(44px, 6.4vw, 88px); line-height: .98; letter-spacing: -.05em; font-weight: 850; margin: 18px 0 22px; }
+  h1 em { font-style: normal; color: var(--blue); }
+  .lede { font-size: 19px; line-height: 1.55; color: var(--ink-2); max-width: 540px; margin: 0 0 30px; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .facts { display: flex; gap: 26px; margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .facts div { font-family: var(--mono); font-size: 12px; color: var(--ink-3); letter-spacing: .04em; }
+  .facts b { display: block; font-family: -apple-system, sans-serif; font-size: 22px; color: var(--ink); letter-spacing: -.02em; margin-bottom: 2px; }
 
-  .works { display: flex; gap: 10px 26px; justify-content: center; flex-wrap: wrap; color: var(--ink-3); font-size: 14px; margin-top: 18px; }
-  .works b { color: var(--ink-2); font-weight: 600; }
+  .figure { position: relative; justify-self: center; padding: 30px 110px 30px 0; }
+  .shot { width: 270px; aspect-ratio: 1206 / 2622; border-radius: 40px; padding: 8px; background: var(--ink); box-shadow: 0 36px 70px -36px rgba(12, 14, 40, .6); }
+  .shot img { width: 100%; height: 100%; object-fit: cover; border-radius: 33px; }
+  .note { position: absolute; left: calc(270px - 14px); display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); white-space: nowrap; letter-spacing: .02em; }
+  .note::before { content: ""; width: 54px; height: 1px; background: var(--blue); }
+  .note::after { content: ""; position: absolute; left: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+  .note b { color: var(--ink); font-weight: 600; }
 
   /* Sections */
-  section { padding: 92px 0 0; }
-  .head { text-align: center; max-width: 720px; margin: 0 auto 44px; }
-  .kicker { color: var(--blue-2); font-weight: 600; font-size: 14px; letter-spacing: .02em; margin-bottom: 10px; }
-  h2 { font-size: clamp(32px, 4.6vw, 52px); letter-spacing: -.03em; line-height: 1.06; margin: 0 0 14px; }
-  .head p { color: var(--ink-2); font-size: 18px; line-height: 1.55; margin: 0; }
+  section { padding: 110px 0 0; }
+  .sec-head { display: grid; grid-template-columns: 220px 1fr; gap: 24px; margin-bottom: 40px; align-items: end; }
+  .sec-head .num { font-family: var(--mono); font-size: 13px; color: var(--blue); letter-spacing: .08em; border-top: 2px solid var(--ink); padding-top: 12px; }
+  h2 { font-size: clamp(32px, 4.4vw, 54px); letter-spacing: -.045em; line-height: 1; margin: 0; font-weight: 820; }
+  .sec-head p { grid-column: 2; margin: 14px 0 0; color: var(--ink-2); font-size: 18px; line-height: 1.55; max-width: 640px; }
 
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .card { padding: 26px; }
-  .card .ic {
-    width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; margin-bottom: 16px;
-    background: linear-gradient(180deg, rgba(122, 162, 255, .28), rgba(79, 127, 240, .12));
-    border: 1px solid rgba(122, 162, 255, .35);
-  }
-  .card .ic svg { width: 22px; height: 22px; stroke: #cfdcff; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .card h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.01em; }
-  .card p { margin: 0; color: var(--ink-2); line-height: 1.55; font-size: 15px; }
+  /* Spec sheet: the features as a ruled table. */
+  .spec { background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .row { display: grid; grid-template-columns: 220px 1fr 240px; gap: 24px; padding: 24px 28px; border-top: 1px solid var(--line); align-items: baseline; }
+  .row:first-child { border-top: 0; }
+  .row .k { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); letter-spacing: .06em; text-transform: uppercase; }
+  .row h3 { margin: 0 0 6px; font-size: 19px; letter-spacing: -.02em; }
+  .row p { margin: 0; color: var(--ink-2); line-height: 1.55; font-size: 15.5px; }
+  .row .v { font-family: var(--mono); font-size: 12.5px; color: var(--blue); text-align: right; }
+  .row:hover { background: #fafbfd; }
 
-  /* Test mode demo */
-  .demo { display: grid; grid-template-columns: 1fr 1.1fr; gap: 28px; align-items: center; padding: 34px; }
-  .demo h3 { font-size: 28px; letter-spacing: -.02em; margin: 0 0 12px; }
-  .demo p { color: var(--ink-2); line-height: 1.6; margin: 0 0 22px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip {
-    font: inherit; font-size: 14px; color: var(--ink-2); background: var(--glass); border: 1px solid var(--stroke);
-    padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: all .2s ease;
+  /* Test mode: a measured drawing. */
+  .bench { display: grid; grid-template-columns: 320px 1fr; background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .bench .side { padding: 28px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+  .bench .side p { color: var(--ink-2); line-height: 1.55; font-size: 15px; margin: 0 0 16px; }
+  .opt {
+    font: inherit; font-size: 15px; text-align: left; cursor: pointer; padding: 11px 13px; border-radius: 9px;
+    border: 1px solid transparent; background: none; color: var(--ink-2); display: flex; justify-content: space-between; gap: 10px;
   }
-  .chip:hover { color: var(--ink); background: var(--glass-hi); }
-  .chip[aria-pressed="true"] { color: #fff; background: linear-gradient(180deg, #6a93ff, #3f6fe6); border-color: rgba(255, 255, 255, .3); }
-  .spec { margin-top: 18px; font-size: 14px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-  .stage {
-    height: 520px; border-radius: 22px; display: grid; place-items: center; position: relative; overflow: hidden;
-    background: radial-gradient(circle at 50% 40%, rgba(79, 127, 240, .18), transparent 65%), rgba(0, 0, 0, .25);
-    border: 1px solid rgba(255, 255, 255, .07);
+  .opt span { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+  .opt:hover { background: var(--paper); color: var(--ink); }
+  .opt[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); background: var(--paper); font-weight: 600; }
+  .opt[aria-pressed="true"] span { color: var(--blue); }
+  .board {
+    position: relative; height: 560px; display: grid; place-items: center;
+    background-image: linear-gradient(rgba(47, 95, 224, .07) 1px, transparent 1px), linear-gradient(90deg, rgba(47, 95, 224, .07) 1px, transparent 1px);
+    background-size: 16px 16px; background-color: #fbfcff;
   }
-  .device {
-    background: #05060c; border: 1px solid rgba(255, 255, 255, .18); padding: 7px;
-    box-shadow: 0 30px 70px -25px rgba(0, 0, 0, .9);
-    transition: width .5s cubic-bezier(.2, .8, .2, 1), height .5s cubic-bezier(.2, .8, .2, 1), border-radius .5s ease;
-  }
-  .device .screen { width: 100%; height: 100%; overflow: hidden; background: #20243a; transition: border-radius .5s ease; }
+  .device { position: relative; background: var(--ink); padding: 6px; transition: width .5s cubic-bezier(.2, .8, .2, 1), height .5s cubic-bezier(.2, .8, .2, 1), border-radius .5s ease; }
+  .device .screen { width: 100%; height: 100%; overflow: hidden; transition: border-radius .5s ease; }
   .device img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-  .stage .label { position: absolute; bottom: 14px; font-size: 12px; color: var(--ink-3); letter-spacing: .02em; }
+  .measure { position: absolute; font-family: var(--mono); font-size: 11.5px; color: var(--blue); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .measure.w { left: 0; right: 0; top: -26px; justify-content: center; }
+  .measure.w::before, .measure.w::after { content: ""; flex: 1; height: 1px; background: var(--blue); }
+  .measure.h { top: 0; bottom: 0; right: -30px; flex-direction: column; justify-content: center; writing-mode: vertical-rl; }
+  .measure.h::before, .measure.h::after { content: ""; flex: 1; width: 1px; background: var(--blue); }
+  .board .caption { position: absolute; left: 18px; bottom: 14px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
 
-  /* Split */
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-  .split .shot { display: flex; justify-content: center; }
-  .split .phone { position: relative; left: auto; transform: none; width: 300px; }
-  .split ul { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 12px; }
-  .split li { display: flex; gap: 12px; color: var(--ink-2); line-height: 1.5; }
-  .split li::before { content: ""; flex: none; width: 8px; height: 8px; margin-top: 8px; border-radius: 50%; background: var(--blue-2); box-shadow: 0 0 10px var(--blue); }
-  .split h2 { text-align: left; }
-  .split .lead { color: var(--ink-2); font-size: 18px; line-height: 1.55; margin: 0; }
+  /* Location */
+  .loc { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+  .loc ol { list-style: none; padding: 0; margin: 26px 0 0; counter-reset: l; border-top: 1px solid var(--line); }
+  .loc li { counter-increment: l; display: grid; grid-template-columns: 44px 1fr; padding: 15px 0; border-bottom: 1px solid var(--line); color: var(--ink-2); line-height: 1.5; }
+  .loc li::before { content: "0" counter(l); font-family: var(--mono); font-size: 12px; color: var(--blue); padding-top: 3px; }
+  .loc .shot { width: 290px; justify-self: center; }
+  .coords { margin-top: 18px; font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+  .coords b { color: var(--ink); font-weight: 600; }
 
-  /* Steps */
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: s; }
-  .step { padding: 26px; }
-  .step .n {
-    width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 15px;
-    background: linear-gradient(180deg, #6a93ff, #3f6fe6); margin-bottom: 14px; box-shadow: 0 6px 18px -6px rgba(79, 127, 240, .9);
-  }
-  .step h3 { margin: 0 0 8px; font-size: 18px; }
-  .step p { margin: 0; color: var(--ink-2); line-height: 1.55; font-size: 15px; }
+  /* Steps as a log */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 14px; background: var(--sheet); overflow: hidden; }
+  .step { padding: 28px; border-left: 1px solid var(--line); }
+  .step:first-child { border-left: 0; }
+  .step .n { font-family: var(--mono); font-size: 12px; color: var(--blue); letter-spacing: .08em; }
+  .step h3 { margin: 12px 0 8px; font-size: 20px; letter-spacing: -.02em; }
+  .step p { margin: 0 0 16px; color: var(--ink-2); line-height: 1.55; font-size: 15px; }
+  .step pre { margin: 0; font-family: var(--mono); font-size: 12px; background: var(--ink); color: #cfd6ff; padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
 
-  /* FAQ */
-  .faq { max-width: 800px; margin: 0 auto; display: grid; gap: 10px; }
-  details { padding: 0 22px; border-radius: 18px; }
-  summary { cursor: pointer; list-style: none; padding: 19px 0; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
-  summary::-webkit-details-marker { display: none; }
-  summary::after { content: "+"; color: var(--blue-2); font-size: 22px; line-height: 1; transition: transform .2s ease; }
-  details[open] summary::after { transform: rotate(45deg); }
-  details p { margin: 0 0 19px; color: var(--ink-2); line-height: 1.6; }
+  /* FAQ as a definition list */
+  .faq { border-top: 2px solid var(--ink); }
+  .qa { display: grid; grid-template-columns: 1fr 1.4fr; gap: 32px; padding: 22px 0; border-bottom: 1px solid var(--line); }
+  .qa dt { font-weight: 650; font-size: 17px; letter-spacing: -.01em; }
+  .qa dd { margin: 0; color: var(--ink-2); line-height: 1.6; }
 
-  /* Final CTA */
-  .final { margin-top: 100px; padding: 56px 32px; text-align: center; position: relative; overflow: hidden; }
-  .final::before {
-    content: ""; position: absolute; inset: -40% -10% auto; height: 120%; z-index: -1;
-    background: radial-gradient(closest-side, rgba(79, 127, 240, .35), transparent);
-  }
-  .final img { width: 96px; height: 96px; border-radius: 22px; margin: 0 auto 22px; box-shadow: 0 18px 40px -14px rgba(79, 127, 240, .7); }
-  .final h2 { margin-bottom: 12px; }
-  .final p { color: var(--ink-2); margin: 0 auto 28px; max-width: 520px; line-height: 1.55; }
+  /* Download */
+  .get { margin-top: 120px; background: var(--ink); color: #fff; border-radius: 18px; padding: 52px; display: grid; grid-template-columns: auto 1fr auto; gap: 36px; align-items: center; position: relative; overflow: hidden; }
+  .get::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px); background-size: 32px 32px; pointer-events: none; }
+  .get img { width: 104px; height: 104px; border-radius: 24px; position: relative; }
+  .get h2 { color: #fff; }
+  .get p { color: rgba(255, 255, 255, .65); margin: 10px 0 0; line-height: 1.55; max-width: 520px; }
+  .get .cta { position: relative; }
+  .get .btn.solid { background: #fff; color: var(--ink); border-color: #fff; }
+  .get .btn.solid:hover { background: var(--blue-soft); }
+  .get .btn.line { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .35); }
+  .get .btn.line:hover { background: rgba(255, 255, 255, .08); }
+  .get .label { color: rgba(255, 255, 255, .5); }
 
-  /* Intro: the icon alone; scrolling opens the container and reveals the name. */
-  .intro { height: 330vh; position: relative; }
-  .intro .stage {
-    position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden;
-    display: grid; place-items: center;
-  }
-  .intro .glow {
-    position: absolute; width: 90vmax; height: 90vmax; border-radius: 50%;
-    background: radial-gradient(closest-side, rgba(79, 127, 240, .32), rgba(140, 107, 217, .12) 55%, transparent);
-    opacity: .55;
-  }
-  .cicon { --s: min(44vmin, 300px); position: absolute; width: var(--s); height: var(--s); }
-  .cicon .shell {
-    position: absolute; inset: 0; border-radius: 22.5%;
-    background: linear-gradient(180deg, #8890b4, #3e4563);
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, .25), 0 40px 80px -30px rgba(0, 0, 0, .9), 0 0 0 1px rgba(255, 255, 255, .08);
-  }
-  .cicon .slab, .cicon .tiles { position: absolute; inset: 17%; border-radius: 24%; }
-  .cicon .slab {
-    background: linear-gradient(180deg, #e3e6f4, #aab0cd);
-    box-shadow: inset 0 3px 0 rgba(255, 255, 255, .8), 0 16px 34px -12px rgba(8, 10, 28, .75);
-  }
-  .cicon .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 7%; padding: 9%; }
-  .tile {
-    border-radius: 30%; display: grid; place-items: center;
-    background: linear-gradient(180deg, #bcc1d9, #969cb9);
-    box-shadow: inset 0 calc(var(--s) * .018) calc(var(--s) * .03) rgba(20, 24, 50, .45), 0 0 0 1px rgba(255, 255, 255, .25);
-  }
-  .knob {
-    width: 40%; aspect-ratio: 1; border-radius: 50%;
-    background: linear-gradient(180deg, #fff, #dde1f0);
-    box-shadow: 0 calc(var(--s) * .012) calc(var(--s) * .025) rgba(10, 14, 30, .45);
-  }
-  .knob.live { background: linear-gradient(180deg, #9cc0ff, #3f74ee); box-shadow: 0 0 calc(var(--s) * .07) #6e9dff, 0 calc(var(--s) * .012) calc(var(--s) * .025) rgba(10, 14, 30, .45); }
-  .wordmark { position: absolute; text-align: center; opacity: 0; padding: 0 16px; }
-  .wordmark .name {
-    font-size: clamp(64px, 15vw, 190px); font-weight: 800; letter-spacing: -.055em; line-height: .95;
-    background: linear-gradient(100deg, #ffffff 10%, #a9c1ff 45%, #7d93f2 70%, #b49bf0 95%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .wordmark .tag { margin-top: 18px; font-size: clamp(17px, 2.4vw, 24px); color: var(--ink-2); letter-spacing: -.01em; }
-  .scrollhint {
-    position: absolute; bottom: 36px; display: grid; justify-items: center; gap: 8px;
-    font-size: 13px; color: var(--ink-3); letter-spacing: .08em; text-transform: uppercase;
-  }
-  .scrollhint svg { width: 20px; height: 20px; stroke: var(--ink-2); fill: none; stroke-width: 2; animation: nudge 1.8s ease-in-out infinite; }
-  @keyframes nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
-  body.intro-on nav { opacity: 0; pointer-events: none; }
-  nav { transition: opacity .35s ease; }
-
-  footer { padding: 54px 0 46px; color: var(--ink-3); font-size: 13px; }
-  footer .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+  footer { padding: 46px 0; margin-top: 60px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   footer a { color: var(--ink-2); }
 
-  @media (max-width: 900px) {
-    .grid, .steps { grid-template-columns: 1fr 1fr; }
-    .demo, .split { grid-template-columns: 1fr; }
-    .split .shot { order: -1; }
-    .split h2 { text-align: center; }
-    .split .lead { text-align: center; }
+  @media (max-width: 960px) {
+    .hero .wrap, .loc { grid-template-columns: 1fr; }
+    .figure { padding-right: 0; justify-self: start; }
+    .note { display: none; }
+    .sec-head { grid-template-columns: 1fr; }
+    .sec-head p { grid-column: 1; }
+    .row { grid-template-columns: 1fr; gap: 6px; }
+    .row .v { text-align: left; }
+    .bench { grid-template-columns: 1fr; }
+    .bench .side { border-right: 0; border-bottom: 1px solid var(--line); }
+    .steps { grid-template-columns: 1fr; }
+    .step { border-left: 0; border-top: 1px solid var(--line); }
+    .step:first-child { border-top: 0; }
+    .qa { grid-template-columns: 1fr; gap: 8px; }
+    .get { grid-template-columns: 1fr; padding: 34px; }
   }
   @media (max-width: 640px) {
     .wrap { padding: 0 16px; }
     nav .links { display: none; }
     nav .btn { margin-left: auto; }
     .hero { padding-top: 48px; }
-    .phones { height: 470px; }
-    .phone { width: 210px; border-radius: 36px; }
-    .phone img { border-radius: 30px; }
-    .phone.left { transform: translateX(-102%) translateY(44px) rotate(-7deg) scale(.82); }
-    .phone.right { transform: translateX(2%) translateY(44px) rotate(7deg) scale(.82); }
-    .grid, .steps { grid-template-columns: 1fr; }
-    .demo { padding: 20px; }
-    .stage { height: 440px; }
-    section { padding-top: 72px; }
-    .split .phone { width: 250px; }
+    .figure { justify-self: center; }
+    .shot { width: 230px; border-radius: 34px; }
+    .shot img { border-radius: 28px; }
+    .loc .shot { width: 240px; }
+    section { padding-top: 84px; }
+    .board { height: 440px; }
+    .bench .side { padding: 20px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .intro { display: none; }
     body.intro-on nav { opacity: 1; pointer-events: auto; }
-    html { scroll-behavior: auto; }
-    .device, .btn, .chip { transition: none; }
+    .device, .device .screen { transition: none; }
+    .scrollhint i { animation: none; }
   }
 </style>
 </head>
@@ -297,7 +239,8 @@
 
 <div class="intro" id="intro" aria-hidden="true">
   <div class="stage">
-    <div class="glow" id="glow"></div>
+    <div class="cross" id="cross"></div>
+    <div class="dim" id="dimTop">FIG. 1 · ICONTAIN</div>
     <div class="cicon" id="cicon">
       <div class="shell" id="shell"></div>
       <div class="slab" id="slab"></div>
@@ -309,90 +252,95 @@
       </div>
     </div>
     <div class="wordmark" id="wordmark">
-      <div class="name">iContain</div>
-      <div class="tag">Every app. One container.</div>
+      <div class="name"><span class="i">i</span>Contain</div>
+      <div class="tag">Every app · One container</div>
     </div>
-    <div class="scrollhint" id="hint">Scroll<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+    <div class="scrollhint" id="hint">SCROLL<i></i></div>
   </div>
 </div>
 
 <nav>
   <div class="wrap">
-    <a class="brand" href="#"><img src="assets/icon.png" alt="">iContain</a>
+    <a class="brand" href="#">
+      <img src="assets/icon.png" alt="">iContain<span class="v">v0.1</span>
+    </a>
     <div class="links">
-      <a href="#features">Features</a>
+      <a href="#spec">Features</a>
       <a href="#test-mode">Test mode</a>
-      <a href="#how">How it works</a>
+      <a href="#location">Location</a>
       <a href="#faq">FAQ</a>
       <a href="https://github.com/mirazbakis/iContain">GitHub</a>
     </div>
-    <a class="btn primary" href="#download">Download</a>
+    <a class="btn solid" href="#download">Download</a>
   </div>
 </nav>
 
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow glass"><span class="dot"></span>Free and open source · iOS 18+</div>
-    <h1>Every app.<br><span class="grad">One container.</span></h1>
-    <p class="lede">iContain runs apps inside itself on your iPhone, including builds made for the iOS Simulator. Test them as any iPhone or iPad, anywhere in the world, without installing a thing.</p>
-    <div class="cta">
-      <a class="btn primary" href="#download">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
-        Download iContain
-      </a>
-      <a class="btn ghost" href="https://github.com/mirazbakis/iContain">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
-        View on GitHub
-      </a>
+    <div>
+      <div class="label"><b>●</b> Free · Open source · iOS 18+</div>
+      <h1>Run any app<br>inside <em>one</em> app.</h1>
+      <p class="lede">iContain loads apps into its own container on your iPhone, including builds made for the iOS Simulator. Test them as any iPhone or iPad, anywhere in the world, without installing them.</p>
+      <div class="cta">
+        <a class="btn solid" href="#download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
+          Download iContain
+        </a>
+        <a class="btn line" href="https://github.com/mirazbakis/iContain">Source on GitHub</a>
+      </div>
+      <div class="facts">
+        <div><b>9</b>test devices</div>
+        <div><b>1</b>App ID for every app</div>
+        <div><b>MIT</b>license</div>
+      </div>
     </div>
-    <div class="meta">Version 0.1 · MIT license · Works with a free Apple ID</div>
-
-    <div class="phones" aria-hidden="true">
-      <div class="phone left"><img src="assets/welcome.jpg" alt=""></div>
-      <div class="phone mid"><img src="assets/apps.jpg" alt=""></div>
-      <div class="phone right"><img src="assets/settings.jpg" alt=""></div>
+    <div class="figure">
+      <div class="shot"><img src="assets/apps.jpg" alt="iContain's app library with an imported Simulator build"></div>
+      <div class="note" style="top: 23%"><b>Probe</b> · Simulator build</div>
+      <div class="note" style="top: 33%">converted → iOS arm64</div>
+      <div class="note" style="top: 43%">signed · ready to open</div>
+      <div class="note" style="top: 88%">Liquid Glass UI</div>
     </div>
-    <div class="works">Install it with <b>AltLoad</b> · <b>AltStore</b> · <b>SideStore</b></div>
   </div>
 </header>
 
-<section id="features">
+<section id="spec">
   <div class="wrap">
-    <div class="head">
-      <div class="kicker">Features</div>
-      <h2>A simulator in your pocket.</h2>
-      <p>Everything you'd open Xcode for, on the device you're actually holding.</p>
+    <div class="sec-head">
+      <div class="num">01 / FEATURES</div>
+      <h2>The spec sheet.</h2>
+      <p>What iContain does, line by line.</p>
     </div>
-    <div class="grid">
-      <div class="card glass">
-        <div class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M9 6.5h6M12 17.5h.01"/></svg></div>
-        <h3>Simulator builds on iPhone</h3>
-        <p>Import a <code>.app</code> built for the iOS Simulator. iContain converts it to run on the real device.</p>
+    <div class="spec">
+      <div class="row">
+        <div class="k">Import</div>
+        <div><h3>Any build you have</h3><p>An <code>.ipa</code>, an <code>.xcarchive</code> or a zipped <code>.app</code>, from Files, the share sheet, or iContain's own folder.</p></div>
+        <div class="v">ipa · xcarchive · app</div>
       </div>
-      <div class="card glass">
-        <div class="ic"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></div>
-        <h3>Any build you have</h3>
-        <p><code>.ipa</code>, <code>.xcarchive</code> or a zipped <code>.app</code>, from Files, the share sheet or iContain's own folder.</p>
+      <div class="row">
+        <div class="k">Simulator</div>
+        <div><h3>Simulator builds on a real iPhone</h3><p>Builds made for the iOS Simulator are thinned to arm64, retagged for iOS and signed, so they run on the device in your hand.</p></div>
+        <div class="v">iossimulator → ios</div>
       </div>
-      <div class="card glass">
-        <div class="ic"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="12" height="15" rx="2"/><rect x="16.5" y="9" width="5" height="11" rx="1.5"/></svg></div>
-        <h3>Test as any device</h3>
-        <p>iPhone SE to iPhone 17 Pro Max, iPad mini to iPad Pro, in light or dark mode, shown in a device frame.</p>
+      <div class="row">
+        <div class="k">Test mode</div>
+        <div><h3>Any iPhone or iPad</h3><p>The app is told the screen size, safe areas and idiom of the device you pick, in light or dark mode, and shown in a frame.</p></div>
+        <div class="v">SE → Pro Max → iPad Pro</div>
       </div>
-      <div class="card glass">
-        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div>
-        <h3>Be anywhere</h3>
-        <p>Pick a place on the map and apps in iContain see it. With LocalDevVPN, move the whole iPhone too.</p>
+      <div class="row">
+        <div class="k">Location</div>
+        <div><h3>A pin, anywhere</h3><p>Apps inside iContain see the place you choose. With LocalDevVPN, the whole iPhone moves too.</p></div>
+        <div class="v">per app · whole device</div>
       </div>
-      <div class="card glass">
-        <div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 6V3M12 6V3M16 6V3M8 21v-3M12 21v-3M16 21v-3M9 10h6v4H9z"/></svg></div>
-        <h3>More RAM</h3>
-        <p>Switch on the Increased Memory Limit for your App IDs, so heavy apps and emulators stop getting closed.</p>
+      <div class="row">
+        <div class="k">Memory</div>
+        <div><h3>More RAM</h3><p>Switch on the Increased Memory Limit and Extended Virtual Addressing for your App IDs, iContain's included.</p></div>
+        <div class="v">INCREASED_MEMORY_LIMIT</div>
       </div>
-      <div class="card glass">
-        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
-        <h3>No App ID limits</h3>
-        <p>Every app shares iContain's one App ID. Sign with a free Apple ID or a <code>.p12</code> certificate.</p>
+      <div class="row">
+        <div class="k">Signing</div>
+        <div><h3>No App ID limits</h3><p>Every app runs under iContain's one App ID. Sign with a free Apple ID, or a <code>.p12</code> development certificate.</p></div>
+        <div class="v">apple id · .p12</div>
       </div>
     </div>
   </div>
@@ -400,111 +348,104 @@
 
 <section id="test-mode">
   <div class="wrap">
-    <div class="demo glass">
-      <div>
-        <div class="kicker">Test mode</div>
-        <h3>Your layout, on every screen.</h3>
-        <p>Pick a device for each app. iContain tells it the screen size, safe areas, and whether it's an iPhone or an iPad, then shows it in a frame. Try it:</p>
-        <div class="chips" id="chips"></div>
-        <div class="spec" id="spec"></div>
+    <div class="sec-head">
+      <div class="num">02 / TEST MODE</div>
+      <h2>Measured on every screen.</h2>
+      <p>Pick a device for each app before you open it. Try it here:</p>
+    </div>
+    <div class="bench">
+      <div class="side">
+        <p>The app gets the device's screen, safe areas, and iPhone or iPad layout, and runs at that size inside a frame.</p>
+        <div id="opts"></div>
       </div>
-      <div class="stage" id="stage">
-        <div class="device" id="device"><div class="screen" id="screen"><img src="assets/apps.jpg" alt="iContain showing an app in Test mode"></div></div>
-        <div class="label" id="label"></div>
+      <div class="board" id="board">
+        <div class="device" id="device">
+          <div class="measure w" id="mw"></div>
+          <div class="measure h" id="mh"></div>
+          <div class="screen" id="screen"><img src="assets/apps.jpg" alt="An app shown at another device's size"></div>
+        </div>
+        <div class="caption" id="caption"></div>
       </div>
     </div>
   </div>
 </section>
 
-<section>
-  <div class="wrap split">
+<section id="location">
+  <div class="wrap loc">
     <div>
-      <div class="kicker">Location</div>
-      <h2>Drop a pin. Be there.</h2>
-      <p class="lead">Search for a place or tap the map. Apps running in iContain see that location, with nothing else to set up.</p>
-      <ul>
-        <li>A different place for each app, or the same pin for all of them</li>
-        <li>Whole-device mode moves your iPhone's location for every app, the way Xcode does</li>
-        <li>Turn it off and everything goes back to your real location</li>
-      </ul>
+      <div class="sec-head" style="grid-template-columns: 1fr; margin-bottom: 0">
+        <div class="num">03 / LOCATION</div>
+        <h2>Drop a pin.<br>Be there.</h2>
+      </div>
+      <ol>
+        <li>Search for a place, or tap the map.</li>
+        <li>Turn it on for one app, or move every app to the pin.</li>
+        <li>For the whole iPhone, connect LocalDevVPN and your pairing file.</li>
+      </ol>
+      <div class="coords">LAT <b>51.5007</b> · LON <b>−0.1246</b> · Westminster, London</div>
     </div>
-    <div class="shot"><div class="phone"><img src="assets/location.jpg" alt="iContain's location screen with a map pin"></div></div>
+    <div class="shot"><img src="assets/location.jpg" alt="iContain's location screen with a map pin"></div>
   </div>
 </section>
 
 <section id="how">
   <div class="wrap">
-    <div class="head">
-      <div class="kicker">How it works</div>
-      <h2>Three steps. No computer.</h2>
+    <div class="sec-head">
+      <div class="num">04 / HOW IT WORKS</div>
+      <h2>Three steps.</h2>
     </div>
     <div class="steps">
-      <div class="step glass"><div class="n">1</div><h3>Install iContain</h3><p>Sideload it once with AltLoad, AltStore or SideStore.</p></div>
-      <div class="step glass"><div class="n">2</div><h3>Import an app</h3><p>Pick an <code>.ipa</code>, archive or Simulator build. iContain converts and signs it for you.</p></div>
-      <div class="step glass"><div class="n">3</div><h3>Open it</h3><p>Choose a device and a place if you like, then tap Open. It runs inside iContain.</p></div>
+      <div class="step"><div class="n">STEP 01</div><h3>Install iContain</h3><p>Sideload it once with AltLoad, AltStore or SideStore.</p><pre>iContain.ipa → your iPhone</pre></div>
+      <div class="step"><div class="n">STEP 02</div><h3>Import an app</h3><p>Pick an IPA, archive or Simulator build. iContain converts and signs it.</p><pre>Probe.app ✓ converted · signed</pre></div>
+      <div class="step"><div class="n">STEP 03</div><h3>Open it</h3><p>Choose a device and a place, then tap Open. Or from Shortcuts:</p><pre>icontain://open?app=Probe</pre></div>
     </div>
   </div>
 </section>
 
 <section id="faq">
   <div class="wrap">
-    <div class="head">
-      <div class="kicker">FAQ</div>
-      <h2>Questions</h2>
+    <div class="sec-head">
+      <div class="num">05 / FAQ</div>
+      <h2>Good to know.</h2>
     </div>
-    <div class="faq">
-      <details class="glass">
-        <summary>Is iContain free?</summary>
-        <p>Yes. It's free and open source under the MIT license, with no ads, accounts or tracking.</p>
-      </details>
-      <details class="glass">
-        <summary>Do I need a computer?</summary>
-        <p>Only to sideload iContain the first time, if your sideloading tool needs one. AltLoad doesn't. After that, importing, signing and running apps all happen on your iPhone.</p>
-      </details>
-      <details class="glass">
-        <summary>Does it work with a free Apple ID?</summary>
-        <p>Yes. Apps inside iContain don't use up App IDs, because they all run under iContain's own. You can also use a <code>.p12</code> development certificate from the same team that signed iContain.</p>
-      </details>
-      <details class="glass">
-        <summary>Can I run App Store apps?</summary>
-        <p>Only decrypted copies. Apps downloaded from the App Store are encrypted for the device they were installed on, and iContain will tell you if an app is.</p>
-      </details>
-      <details class="glass">
-        <summary>What doesn't work yet?</summary>
-        <p>App extensions and widgets, push notifications, running two apps at once, and the Keychain for apps that rely on their own access group. iContain is at version 0.1, so expect rough edges.</p>
-      </details>
-      <details class="glass">
-        <summary>How do I get back to iContain from an app?</summary>
-        <p>Close the app from the app switcher, then open iContain again.</p>
-      </details>
-    </div>
+    <dl class="faq">
+      <div class="qa"><dt>Is it free?</dt><dd>Yes. iContain is free and open source under the MIT license, with no ads, accounts or tracking.</dd></div>
+      <div class="qa"><dt>Do I need a computer?</dt><dd>Only to sideload iContain the first time, if your sideloading tool needs one. AltLoad doesn't. Importing, signing and running apps all happen on your iPhone.</dd></div>
+      <div class="qa"><dt>Does a free Apple ID work?</dt><dd>Yes. Apps inside iContain don't use up App IDs, because they run under iContain's own. A <code>.p12</code> certificate works too, if it's from the same team that signed iContain.</dd></div>
+      <div class="qa"><dt>Can I run App Store apps?</dt><dd>Only decrypted copies. App Store downloads are encrypted for the device they were installed on, and iContain tells you when an app is.</dd></div>
+      <div class="qa"><dt>What doesn't work yet?</dt><dd>App extensions and widgets, push notifications, two apps at once, and the Keychain for apps with their own access group. iContain is at 0.1.</dd></div>
+      <div class="qa"><dt>How do I get back to iContain?</dt><dd>Close the app from the app switcher, then open iContain again.</dd></div>
+    </dl>
   </div>
 </section>
 
 <div class="wrap" id="download">
-  <div class="final glass">
+  <div class="get">
     <img src="assets/icon.png" alt="">
-    <h2>Get iContain</h2>
-    <p>Download the IPA and install it with AltLoad, AltStore or SideStore. Free, open source, and yours to build from scratch.</p>
+    <div>
+      <div class="label">Version 0.1 · 9 MB · iOS 18+</div>
+      <h2 style="margin-top: 10px">Get iContain.</h2>
+      <p>Download the IPA and install it with AltLoad, AltStore or SideStore.</p>
+    </div>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/mirazbakis/iContain/releases/latest/download/iContain.ipa">
+      <a class="btn solid" href="https://github.com/mirazbakis/iContain/releases/latest/download/iContain.ipa">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
         Download IPA
       </a>
-      <a class="btn ghost" href="https://github.com/mirazbakis/iContain/releases">All releases</a>
+      <a class="btn line" href="https://github.com/mirazbakis/iContain/releases">All releases</a>
     </div>
   </div>
 </div>
 
 <footer>
   <div class="wrap">
-    <span>© 2026 mirazbakis · <a href="https://github.com/mirazbakis/iContain/blob/main/LICENSE">MIT license</a></span>
-    <span>Built with <a href="https://github.com/jkcoxson/idevice">idevice</a> and <a href="https://github.com/nab138/isideload">isideload</a> · Not affiliated with Apple</span>
+    <span>© 2026 mirazbakis · <a href="https://github.com/mirazbakis/iContain/blob/main/LICENSE">MIT</a></span>
+    <span>Built with <a href="https://github.com/jkcoxson/idevice">idevice</a> + <a href="https://github.com/nab138/isideload">isideload</a> · Not affiliated with Apple</span>
   </div>
 </footer>
 
 <script>
-  // Test mode demo: the frame takes each device's real proportions.
+  // Test mode demo: the frame takes each device's proportions, with its measurements.
   const devices = [
     { name: "iPhone SE", w: 375, h: 667, r: 0, home: true },
     { name: "iPhone 17", w: 402, h: 874, r: 55 },
@@ -512,56 +453,51 @@
     { name: "iPad mini", w: 744, h: 1133, r: 22 },
     { name: "iPad Pro 13-inch", w: 1032, h: 1376, r: 30 },
   ];
-  const chips = document.getElementById("chips");
-  const stage = document.getElementById("stage");
+  const opts = document.getElementById("opts");
+  const board = document.getElementById("board");
   const device = document.getElementById("device");
   const screen = document.getElementById("screen");
-  const spec = document.getElementById("spec");
-  const label = document.getElementById("label");
   let current = 1;
 
   function show(i) {
     current = i;
     const d = devices[i];
-    const box = stage.getBoundingClientRect();
-    const scale = Math.min((box.width - 60) / d.w, (box.height - 70) / d.h);
+    const box = board.getBoundingClientRect();
+    const scale = Math.min((box.width - 120) / d.w, (box.height - 110) / d.h);
     const w = Math.round(d.w * scale), h = Math.round(d.h * scale);
     device.style.width = w + "px";
     device.style.height = h + "px";
-    const radius = d.home ? 18 : Math.max(10, d.r * scale + 7);
+    const radius = d.home ? 14 : Math.max(10, d.r * scale + 6);
     device.style.borderRadius = radius + "px";
-    screen.style.borderRadius = Math.max(4, radius - 7) + "px";
-    spec.textContent = `${d.w} × ${d.h} points · ${d.w > 700 ? "iPad layout" : "iPhone layout"}`;
-    label.textContent = `${d.name} · iContain Test mode`;
-    [...chips.children].forEach((c, j) => c.setAttribute("aria-pressed", j === i));
+    screen.style.borderRadius = Math.max(4, radius - 6) + "px";
+    document.getElementById("mw").textContent = `${d.w} pt`;
+    document.getElementById("mh").textContent = `${d.h} pt`;
+    document.getElementById("caption").textContent = `${d.name.toUpperCase()} · ${d.w > 700 ? "PAD" : "PHONE"} IDIOM · SCALE ${(scale).toFixed(2)}`;
+    [...opts.children].forEach((c, j) => c.setAttribute("aria-pressed", j === i));
   }
-
   devices.forEach((d, i) => {
     const b = document.createElement("button");
-    b.className = "chip";
+    b.className = "opt";
     b.type = "button";
-    b.textContent = d.name;
+    b.innerHTML = `${d.name}<span>${d.w}×${d.h}</span>`;
     b.addEventListener("click", () => show(i));
-    chips.appendChild(b);
+    opts.appendChild(b);
   });
   addEventListener("resize", () => show(current));
   show(current);
 
-  // Intro: as you scroll through it, the icon grows, its glass falls away, the four
-  // tiles slide apart, and the name appears between them before the site takes over.
+  // Intro: as you scroll, the icon grows, its casing falls away, the four tiles part,
+  // and the name appears between them before the page takes over.
   (() => {
     const intro = document.getElementById("intro");
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       document.body.classList.remove("intro-on");
       return;
     }
-    const icon = document.getElementById("cicon");
-    const shell = document.getElementById("shell");
-    const slab = document.getElementById("slab");
+    const $ = (id) => document.getElementById(id);
+    const icon = $("cicon"), shell = $("shell"), slab = $("slab"), word = $("wordmark");
+    const hint = $("hint"), cross = $("cross"), dimTop = $("dimTop");
     const tiles = [...icon.querySelectorAll(".tile")];
-    const word = document.getElementById("wordmark");
-    const hint = document.getElementById("hint");
-    const glow = document.getElementById("glow");
     const clamp = (x) => Math.min(1, Math.max(0, x));
     const span = (p, a, b) => clamp((p - a) / (b - a));
     const ease = (t) => 1 - Math.pow(1 - t, 3);
@@ -572,30 +508,29 @@
       queued = false;
       const box = intro.getBoundingClientRect();
       const p = clamp(-box.top / (box.height - innerHeight));
+      const grow = ease(span(p, 0.04, 0.4));
+      const open = ease(span(p, 0.16, 0.52));
+      const fly = easeIn(span(p, 0.4, 0.7));
+      const name = ease(span(p, 0.36, 0.62));
+      const leave = ease(span(p, 0.8, 1));
 
-      const grow = ease(span(p, 0.04, 0.42));     // icon zooms in
-      const open = ease(span(p, 0.18, 0.55));     // glass falls away, tiles part
-      const fly = easeIn(span(p, 0.42, 0.72));    // tiles leave the screen
-      const name = ease(span(p, 0.36, 0.62));     // "iContain" arrives
-      const leave = ease(span(p, 0.8, 1));        // everything hands over to the site
-
-      icon.style.transform = `scale(${1 + grow * 0.9}) rotate(${grow * -4}deg)`;
+      icon.style.transform = `scale(${1 + grow * 0.8})`;
       shell.style.opacity = 1 - open;
-      shell.style.transform = `scale(${1 + open * 0.25})`;
+      shell.style.transform = `scale(${1 + open * 0.3})`;
       slab.style.opacity = 1 - open;
       slab.style.transform = `scale(${1 + open * 0.15})`;
       tiles.forEach((t) => {
         const dx = +t.dataset.dx, dy = +t.dataset.dy;
-        const d = open * 70 + fly * 260;
-        t.style.transform = `translate(${dx * d}%, ${dy * d}%) rotate(${dx * dy * (open * 10 + fly * 18)}deg) scale(${1 + fly * 0.5})`;
+        const d = open * 75 + fly * 280;
+        t.style.transform = `translate(${dx * d}%, ${dy * d}%) scale(${1 + fly * 0.4})`;
         t.style.opacity = 1 - fly;
       });
       word.style.opacity = name * (1 - leave);
-      word.style.transform = `translateY(${(1 - name) * 40 - leave * 140}px) scale(${0.9 + name * 0.1})`;
-      word.style.letterSpacing = `${(1 - name) * 0.06}em`;
+      word.style.transform = `translateY(${(1 - name) * 34 - leave * 130}px)`;
       hint.style.opacity = 1 - span(p, 0, 0.06);
-      glow.style.opacity = 0.55 + open * 0.45 - leave * 0.7;
-      glow.style.transform = `scale(${0.8 + grow * 0.5})`;
+      cross.style.opacity = 1 - open;
+      dimTop.style.opacity = 1 - span(p, 0, 0.2);
+      dimTop.style.transform = `translateY(calc(-1 * min(28vmin, 200px)))`;
       document.body.classList.toggle("intro-on", p < 0.9);
     }
     const request = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };

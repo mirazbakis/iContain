@@ -1,82 +1,87 @@
 <!doctype html>
-<!-- iContain ad template. scripts/render-ads.sh renders it at three sizes:
-     ?f=og (1200x630), ?f=square (1080x1080), ?f=story (1080x1920). -->
+<!-- iContain ad template, in the site's blueprint style. scripts/render-ads.sh renders
+     it at three sizes: ?f=og (1200x630), ?f=square (1080x1080), ?f=story (1080x1920). -->
 <html><head><meta charset="utf-8">
 <style>
   * { box-sizing: border-box; margin: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; }
   body {
-    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif; color: #f4f6ff;
-    background:
-      radial-gradient(60% 50% at 85% 0%, rgba(79,127,240,.42), transparent 70%),
-      radial-gradient(55% 45% at 0% 60%, rgba(140,107,217,.30), transparent 70%),
-      linear-gradient(180deg, #262b45, #0e1020 60%, #0a0c18);
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif; color: #0c0e18;
+    background-color: #f3f4f7;
+    background-image: linear-gradient(rgba(12,14,24,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(12,14,24,.05) 1px, transparent 1px);
+    background-size: 32px 32px;
     -webkit-font-smoothing: antialiased;
   }
-  .ad { position: relative; width: 100%; height: 100%; display: flex; }
-  .copy { display: flex; flex-direction: column; justify-content: center; }
-  .brand { display: flex; align-items: center; gap: .45em; font-weight: 700; letter-spacing: -.01em; }
-  .brand img { border-radius: 22%; box-shadow: 0 10px 30px -10px rgba(79,127,240,.8); }
-  h1 { letter-spacing: -.04em; line-height: .98; }
-  .grad { background: linear-gradient(100deg, #a7c0ff, #6f8ff5 50%, #b195ee); -webkit-background-clip: text; color: transparent; }
-  p { color: rgba(232,236,255,.72); line-height: 1.4; }
-  .pills { display: flex; gap: .5em; flex-wrap: wrap; }
-  .pill {
-    padding: .45em .95em; border-radius: 999px; font-weight: 600;
-    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
-  }
-  .pill.blue { background: linear-gradient(180deg,#6a93ff,#3f6fe6); border-color: rgba(255,255,255,.3); }
-  .url { color: rgba(232,236,255,.55); font-weight: 600; }
-  .phone {
-    aspect-ratio: 1206/2622; border-radius: 13.5% / 6.2%; padding: 2.6%; background: #05060c;
-    border: 2px solid rgba(255,255,255,.18); box-shadow: 0 40px 90px -30px #000;
-  }
-  .phone img { width: 100%; height: 100%; object-fit: cover; border-radius: 11% / 5.1%; display: block; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; color: #8a8fa0; }
+  .blue { color: #2f5fe0; }
+  .ad { position: relative; width: 100%; height: 100%; }
+  .copy { position: absolute; display: flex; flex-direction: column; }
+  .brand { display: flex; align-items: center; gap: .5em; font-weight: 750; letter-spacing: -.02em; }
+  .brand img { border-radius: 22%; }
+  .brand .v { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 500; font-size: .45em; color: #8a8fa0; border: 1px solid #d9dce5; border-radius: 5px; padding: .1em .4em; }
+  h1 { font-weight: 850; letter-spacing: -.05em; line-height: .96; }
+  p { color: #4a4f60; line-height: 1.45; }
+  .rule { height: 2px; background: #0c0e18; }
+  .facts { display: flex; gap: 1.6em; }
+  .facts div { font-family: ui-monospace, "SF Mono", Menlo, monospace; color: #8a8fa0; }
+  .facts b { display: block; font-family: -apple-system, sans-serif; color: #0c0e18; font-size: 1.7em; letter-spacing: -.02em; }
+  .shot { position: absolute; aspect-ratio: 1206/2622; background: #0c0e18; box-shadow: 0 40px 80px -40px rgba(12,14,40,.6); }
+  .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .note { position: absolute; display: flex; align-items: center; gap: .6em; font-family: ui-monospace, "SF Mono", Menlo, monospace; color: #4a4f60; white-space: nowrap; }
+  .note::before { content: ""; width: 3.2em; height: 1px; background: #2f5fe0; }
+  .note b { color: #0c0e18; }
+  .url { position: absolute; font-family: ui-monospace, "SF Mono", Menlo, monospace; color: #0c0e18; font-weight: 600; }
 
-  /* 1200x630 link card */
-  .og .copy { padding: 0 0 0 76px; width: 60%; gap: 22px; }
-  .og .brand { font-size: 30px; } .og .brand img { width: 56px; }
-  .og h1 { font-size: 78px; } .og p { font-size: 25px; max-width: 560px; } .og .pills { font-size: 19px; }
-  .og .phones { position: absolute; right: 40px; top: 70px; display: flex; gap: 22px; }
-  .og .phone { width: 225px; } .og .phone.b { margin-top: 70px; }
+  /* 1200x630 */
+  .og .copy { left: 72px; top: 70px; width: 660px; gap: 22px; }
+  .og .brand { font-size: 30px; } .og .brand img { width: 52px; }
+  .og h1 { font-size: 80px; } .og p { font-size: 23px; max-width: 600px; } .og .mono { font-size: 15px; }
+  .og .facts { font-size: 15px; }
+  .og .shot { width: 250px; right: 120px; top: 60px; padding: 9px; border-radius: 40px; }
+  .og .shot img { border-radius: 32px; }
+  .og .note { display: none; }
+  .og .url { left: 72px; bottom: 40px; font-size: 16px; }
 
-  /* 1080x1080 square */
-  .square { flex-direction: column; align-items: center; text-align: center; padding-top: 86px; }
-  .square .copy { align-items: center; gap: 24px; }
-  .square .brand { font-size: 34px; } .square .brand img { width: 64px; }
-  .square h1 { font-size: 96px; } .square p { font-size: 30px; max-width: 800px; } .square .pills { font-size: 22px; justify-content: center; }
-  .square .phones { position: absolute; bottom: -260px; display: flex; gap: 30px; align-items: flex-start; }
-  .square .phone { width: 300px; } .square .phone.a, .square .phone.c { margin-top: 90px; opacity: .9; }
+  /* 1080x1080 */
+  .square .copy { left: 80px; top: 80px; width: 560px; gap: 26px; }
+  .square .brand { font-size: 34px; } .square .brand img { width: 60px; }
+  .square h1 { font-size: 96px; } .square p { font-size: 27px; } .square .mono { font-size: 16px; }
+  .square .facts { font-size: 17px; }
+  .square .shot { width: 330px; right: 90px; top: 150px; padding: 11px; border-radius: 50px; }
+  .square .shot img { border-radius: 40px; }
+  .square .note { font-size: 15px; display: none; }
+  .square .url { left: 80px; bottom: 70px; font-size: 20px; }
 
-  /* 1080x1920 story */
-  .story { flex-direction: column; align-items: center; text-align: center; padding-top: 170px; }
-  .story .copy { align-items: center; gap: 32px; }
-  .story .brand { font-size: 44px; } .story .brand img { width: 88px; }
-  .story h1 { font-size: 132px; } .story p { font-size: 40px; max-width: 880px; } .story .pills { font-size: 30px; justify-content: center; }
-  .story .phones { position: absolute; bottom: -120px; display: flex; gap: 34px; align-items: flex-start; }
-  .story .phone { width: 380px; } .story .phone.a, .story .phone.c { margin-top: 120px; opacity: .9; }
-  .story .url { position: absolute; top: 80px; font-size: 30px; }
+  /* 1080x1920 */
+  .story .copy { left: 90px; right: 90px; top: 150px; gap: 34px; }
+  .story .brand { font-size: 46px; } .story .brand img { width: 84px; }
+  .story h1 { font-size: 150px; } .story p { font-size: 38px; } .story .mono { font-size: 22px; }
+  .story .facts { font-size: 22px; }
+  .story .shot { width: 470px; left: 50%; transform: translateX(-50%); bottom: -260px; padding: 15px; border-radius: 70px; }
+  .story .shot img { border-radius: 56px; }
+  .story .note { display: none; }
+  .story .url { right: 90px; top: 165px; font-size: 22px; }
 </style></head>
 <body>
 <div class="ad" id="ad">
   <div class="copy">
-    <div class="brand"><img src="../site/assets/icon.png" alt="">iContain</div>
-    <h1>Every app.<br><span class="grad">One container.</span></h1>
-    <p>Run apps and iOS Simulator builds inside one app on your iPhone. Test as any device, anywhere.</p>
-    <div class="pills"><span class="pill blue">Free</span><span class="pill">Open source</span><span class="pill">iOS 18+</span></div>
+    <div class="brand"><img src="../site/assets/icon.png" alt="">iContain<span class="v">v0.1</span></div>
+    <div class="mono"><span class="blue">●</span> Free · Open source · iOS 18+</div>
+    <h1>Run any app<br>inside <span class="blue">one</span> app.</h1>
+    <p>Including iOS Simulator builds. Test as any iPhone or iPad, anywhere in the world.</p>
+    <div class="rule"></div>
+    <div class="facts"><div><b>9</b>test devices</div><div><b>1</b>App ID</div><div><b>MIT</b>license</div></div>
   </div>
-  <div class="phones">
-    <div class="phone a"><img src="../site/assets/welcome.jpg" alt=""></div>
-    <div class="phone b"><img src="../site/assets/apps.jpg" alt=""></div>
-    <div class="phone c"><img src="../site/assets/location.jpg" alt=""></div>
-  </div>
+  <div class="shot"><img src="../site/assets/apps.jpg" alt=""></div>
+  <div class="note" style="top: 205px"><b>Probe</b> · Simulator build</div>
+  <div class="note" style="top: 235px">converted → iOS arm64</div>
+  <div class="note" style="top: 265px">signed · ready to open</div>
   <div class="url">mirazbakis.github.io/iContain</div>
 </div>
 <script>
   const f = new URLSearchParams(location.search).get("f") || "og";
   document.getElementById("ad").classList.add(f);
-  // The link card fits two phones; the others show three.
-  if (f === "og") document.querySelector(".phone.c").remove();
-  if (f !== "story") document.querySelector(".url").remove();
+  // The link card keeps the sentence short so the screenshot fits beside it.
+  if (f === "og") document.querySelector(".facts").remove();
 </script>
 </body></html>
