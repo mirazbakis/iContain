@@ -1,0 +1,108 @@
+name: Build IPA
+
+# Started by hand: Actions › Build IPA › Run workflow.
+#   Build only  uploads iContain.ipa as an artifact
+#   Release     also publishes a GitHub release (notes from docs/releases/<tag>.md)
+#   Nightly     also replaces the "nightly" prerelease
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "What to do with the IPA"
+        type: choice
+        options:
+          - Build only
+          - Release
+          - Nightly
+        default: Build only
+      version:
+        description: "Release tag, e.g. v0.2.0 or v0.3.0-beta.1 (Release only)"
+        type: string
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check release inputs
+        if: inputs.publish == 'Release'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|rc)\.[0-9]+)?$ ]]; then
+            echo "::error::Set version to a tag like v0.2.0 or v0.3.0-beta.1"; exit 1
+          fi
+          [[ -f "docs/releases/$VERSION.md" ]] || { echo "::error::Add release notes at docs/releases/$VERSION.md first"; exit 1; }
+          marketing=$(grep -E '^\s*MARKETING_VERSION:' project.yml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          [[ "v$marketing" == "${VERSION%%-*}" ]] || { echo "::error::project.yml has MARKETING_VERSION $marketing; set it to ${VERSION#v} first"; exit 1; }
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest
+
+      - name: Install tools
+        run: |
+          echo "DEVELOPER_DIR=$(xcode-select -p)" >> "$GITHUB_ENV"
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+          brew install xcodegen
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Build the Rust core
+        run: ./scripts/build-rust.sh
+
+      - name: Build (Release, unsigned)
+        run: |
+          xcodegen generate
+          xcodebuild -project iContain.xcodeproj -scheme iContain -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" -quiet build
+
+      - name: Package IPA
+        run: ./scripts/package-ipa.sh build/dd/Build/Products/Release-iphoneos/iContain.app iContain.ipa
+
+      # archive: false uploads the .ipa itself rather than a zip around it, which
+      # sideloading tools would otherwise reject.
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: iContain.ipa
+          path: iContain.ipa
+          archive: false
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish release
+        if: inputs.publish == 'Release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: iContain ${{ inputs.version }}
+          body_path: docs/releases/${{ inputs.version }}.md
+          files: iContain.ipa
+          prerelease: ${{ contains(inputs.version, '-') }}
+          make_latest: ${{ !contains(inputs.version, '-') }}
+
+      - name: Publish nightly
+        if: inputs.publish == 'Nightly'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git tag -f nightly && git push -f origin refs/tags/nightly
+          gh release delete nightly --yes >/dev/null 2>&1 || true
+          gh release create nightly iContain.ipa --prerelease --title "Nightly build" \
+            --notes "Unsigned build of \`${GITHUB_REF_NAME}\` (${GITHUB_SHA::7}). Sign it with your own tool, such as AltLoad, before installing."

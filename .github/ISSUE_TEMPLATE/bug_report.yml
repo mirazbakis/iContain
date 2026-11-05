@@ -1,0 +1,29 @@
+name: Bug report
+description: Something in iContain doesn't work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: App you imported
+      description: Its name and where the build came from (App Store decrypt, Xcode, Simulator build…).
+  - type: input
+    id: versions
+    attributes:
+      label: iContain version, iPhone or iPad model, iOS version
+      placeholder: "0.1.0, iPhone 17 Pro, iOS 27.1"
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Error message
+      description: The text of any error iContain showed.
+      render: text

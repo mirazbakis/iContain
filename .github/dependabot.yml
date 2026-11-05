@@ -1,0 +1,15 @@
+# Keeps the workflow actions and Rust dependencies current. Rust updates are grouped
+# into one weekly pull request so CI checks them together.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: cargo
+    directory: /core
+    schedule:
+      interval: weekly
+    groups:
+      rust:
+        patterns: ["*"]

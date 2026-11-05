@@ -1,0 +1,19 @@
+name: Probe
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "18.0"
+targets:
+  Probe:
+    type: application
+    platform: iOS
+    sources: [Probe]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.probe
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Probe shows where it thinks it is.
+        CODE_SIGNING_ALLOWED: NO
+        # A plain executable, as iContain expects (no Xcode debug dylib split).
+        ENABLE_DEBUG_DYLIB: NO

@@ -8,3 +8,4 @@ DerivedData/
 # Generated: scripts/build-rust.sh and `xcodegen generate` recreate these.
 iContainFFI.xcframework/
 iContain.xcodeproj/
+tests/Probe/Probe.xcodeproj/

@@ -1,0 +1,69 @@
+name: CI
+
+# Every push and pull request: Rust tests, the iPhone build and the Probe test app.
+# Uses a GitHub-hosted Mac unless the repository variable MACOS_RUNNER names another
+# runner (Settings › Secrets and variables › Actions › Variables).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: Rust core
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - name: Format
+        run: cargo fmt --manifest-path core/Cargo.toml --check || echo "::warning::Run cargo fmt in core/"
+      - name: Test
+        run: cargo test --manifest-path core/Cargo.toml
+
+  app:
+    name: iOS app
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest
+
+      - name: Install tools
+        run: |
+          echo "DEVELOPER_DIR=$(xcode-select -p)" >> "$GITHUB_ENV"
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+          brew install xcodegen
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Build the Rust core
+        run: ./scripts/build-rust.sh
+
+      - name: Build iContain (iPhone, unsigned)
+        run: |
+          xcodegen generate
+          xcodebuild -project iContain.xcodeproj -scheme iContain \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/dd CODE_SIGNING_ALLOWED=NO -quiet build
+
+      - name: Build iContain and Probe (Simulator)
+        run: |
+          xcodebuild -project iContain.xcodeproj -scheme iContain \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/dd CODE_SIGNING_ALLOWED=NO -quiet build
+          (cd tests/Probe && xcodegen generate)
+          xcodebuild -project tests/Probe/Probe.xcodeproj -scheme Probe \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/probe ONLY_ACTIVE_ARCH=NO -quiet build
