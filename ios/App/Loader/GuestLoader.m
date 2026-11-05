@@ -14,6 +14,7 @@
 // launch has no request and shows iContain.
 
 #import "GuestLoader.h"
+#import "DeviceEmulation.h"
 
 #import <CoreLocation/CoreLocation.h>
 #import <UIKit/UIKit.h>
@@ -303,6 +304,9 @@ void ICRunPendingGuest(int argc, char *_Nullable *_Nonnull argv, NSString *_Null
                                [location[@"longitude"] doubleValue],
                                [location[@"altitude"] doubleValue]);
     }
+
+    // Test mode: another device's screen and traits, and/or a fixed appearance.
+    ICInstallDeviceEmulation(request[@"device"], request[@"appearance"]);
 
     // 6. Hand over. The guest's main() calls UIApplicationMain and never returns.
     ICGuestMain guestMain = (ICGuestMain)((const uint8_t *)header + entry);

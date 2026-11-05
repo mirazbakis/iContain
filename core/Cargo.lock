@@ -1276,6 +1276,7 @@ dependencies = [
  "base64 0.22.1",
  "idevice",
  "isideload",
+ "isideload-p12-keystore",
  "plist",
  "rootcause",
  "rsa",

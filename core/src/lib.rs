@@ -6,3 +6,6 @@
 //   install/device.rs    device services through LocalDevVPN (location simulation)
 
 mod install;
+
+/// Lets examples link the library.
+pub fn touch() {}

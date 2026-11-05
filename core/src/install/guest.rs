@@ -448,6 +448,8 @@ struct GuestIdentity {
     key: RsaPrivateKey,
     cert: Certificate,
     expires: i64,
+    /// Intermediates that came with the certificate (from a .p12), if any.
+    chain: Vec<Certificate>,
 }
 
 fn cert_expiry(cert: &Certificate) -> i64 {
@@ -458,6 +460,50 @@ fn cert_expiry(cert: &Certificate) -> i64 {
         .as_secs() as i64
 }
 
+/// The team ID is the certificate subject's OU.
+fn cert_team(cert: &Certificate) -> String {
+    for rdn in cert.tbs_certificate.subject.0.iter() {
+        for atv in rdn.0.iter() {
+            if atv.oid.to_string() == "2.5.4.11" {
+                if let Ok(s) = atv.value.decode_as::<x509_cert::der::asn1::Utf8StringRef>() {
+                    return s.as_str().to_string();
+                }
+                if let Ok(s) = atv.value.decode_as::<x509_cert::der::asn1::PrintableStringRef>() {
+                    return s.as_str().to_string();
+                }
+            }
+        }
+    }
+    String::new()
+}
+
+/// Uses a development certificate from a .p12 file instead of an Apple ID sign-in.
+fn import_p12(path: &Path, password: &str) -> Result<GuestIdentity, String> {
+    use p12_keystore::{KeyStore, Pkcs12ImportPolicy};
+    let data = std::fs::read(path).map_err(|e| err("Couldn't read the certificate file", e))?;
+    let store = KeyStore::from_pkcs12(&data, password, Pkcs12ImportPolicy::Relaxed)
+        .map_err(|e| err("Couldn't open the certificate file (check the password)", format!("{e:?}")))?;
+    let (_, chain) = store.private_key_chain().ok_or("The file has no private key.")?;
+    let key = RsaPrivateKey::from_pkcs8_der(chain.key().as_der())
+        .map_err(|e| err("The private key isn't an RSA key iContain can use", e))?;
+    let cert_der = chain.certs().first().ok_or("The file has no certificate.")?.as_der();
+    let cert = Certificate::from_der(cert_der).map_err(|e| err("Couldn't read the certificate", e))?;
+    let team_id = cert_team(&cert);
+    if team_id.is_empty() {
+        return Err("The certificate doesn't name a team. Use an Apple development certificate.".into());
+    }
+    let expires = cert_expiry(&cert);
+    let chain = chain
+        .certs()
+        .iter()
+        .skip(1)
+        .filter_map(|c| Certificate::from_der(c.as_der()).ok())
+        .collect();
+    let id = GuestIdentity { team_id, key, cert, expires, chain };
+    save_identity(&id)?;
+    Ok(id)
+}
+
 fn load_identity() -> Option<GuestIdentity> {
     let saved: serde_json::Value = serde_json::from_str(&identity_storage().retrieve(IDENTITY_KEY).ok()??).ok()?;
     use base64::Engine;
@@ -465,7 +511,16 @@ fn load_identity() -> Option<GuestIdentity> {
     let key = RsaPrivateKey::from_pkcs8_der(&b64.decode(saved["key"].as_str()?).ok()?).ok()?;
     let cert = Certificate::from_der(&b64.decode(saved["cert"].as_str()?).ok()?).ok()?;
     let expires = cert_expiry(&cert);
-    Some(GuestIdentity { team_id: saved["teamId"].as_str()?.to_string(), key, cert, expires })
+    let chain = saved["chain"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| b64.decode(v.as_str()?).ok())
+                .filter_map(|der| Certificate::from_der(&der).ok())
+                .collect()
+        })
+        .unwrap_or_default();
+    Some(GuestIdentity { team_id: saved["teamId"].as_str()?.to_string(), key, cert, expires, chain })
 }
 
 fn save_identity(id: &GuestIdentity) -> Result<(), String> {
@@ -473,10 +528,12 @@ fn save_identity(id: &GuestIdentity) -> Result<(), String> {
     let b64 = base64::engine::general_purpose::STANDARD;
     let key = id.key.to_pkcs8_der().map_err(|e| err("Couldn't save the signing key", e))?;
     let cert = id.cert.to_der().map_err(|e| err("Couldn't save the certificate", e))?;
+    let chain: Vec<String> = id.chain.iter().filter_map(|c| c.to_der().ok()).map(|d| b64.encode(d)).collect();
     let json = serde_json::json!({
         "teamId": id.team_id,
         "key": b64.encode(key.as_bytes()),
         "cert": b64.encode(cert),
+        "chain": chain,
     });
     identity_storage()
         .store(IDENTITY_KEY, &json.to_string())
@@ -538,21 +595,42 @@ async fn fetch_identity(
         key: identity.private_key,
         cert: identity.certificate,
         expires,
+        chain: Vec::new(),
     };
     save_identity(&id)?;
     Ok(id)
 }
 
-fn bundled_chain() -> Result<Vec<Certificate>, String> {
-    [APPLE_WWDR_G3_CERTIFICATE_DER, APPLE_ROOT]
-        .iter()
-        .map(|der| Certificate::from_der(der).map_err(|e| err("Couldn't read Apple's certificates", e)))
-        .collect()
+/// The certificates between the signing certificate and Apple's root, found by
+/// following issuers through the .p12's own intermediates, then Apple's WWDR G3 and
+/// root bundled with isideload. Certificates from other intermediates (a .p12 that
+/// carries its WWDR certificate) work the same way.
+fn signing_chain(id: &GuestIdentity) -> Result<Vec<Certificate>, String> {
+    let mut candidates = id.chain.clone();
+    for der in [APPLE_WWDR_G3_CERTIFICATE_DER, APPLE_ROOT] {
+        candidates.push(Certificate::from_der(der).map_err(|e| err("Couldn't read Apple's certificates", e))?);
+    }
+    let mut chain = Vec::new();
+    let mut issuer = id.cert.tbs_certificate.issuer.clone();
+    while chain.len() < 4 {
+        let Some(next) = candidates.iter().find(|c| c.tbs_certificate.subject == issuer).cloned() else {
+            return Err(format!(
+                "The certificate's issuer ({issuer}) is missing. Export the .p12 with its full certificate chain."
+            ));
+        };
+        let is_root = next.tbs_certificate.subject == next.tbs_certificate.issuer;
+        issuer = next.tbs_certificate.issuer.clone();
+        chain.push(next);
+        if is_root {
+            break;
+        }
+    }
+    Ok(chain)
 }
 
 fn sign_app(app: &Path, identity: Option<&GuestIdentity>) -> Result<(), String> {
     let signer = match identity {
-        Some(id) => Some(RustCryptoCmsSigner::new(id.key.clone(), id.cert.clone(), bundled_chain()?)),
+        Some(id) => Some(RustCryptoCmsSigner::new(id.key.clone(), id.cert.clone(), signing_chain(id)?)),
         None => None,
     };
     let team = identity.map(|i| i.team_id.clone()).unwrap_or_default();
@@ -786,6 +864,20 @@ pub unsafe extern "C" fn icontain_identity_info() -> *mut c_char {
     match load_identity() {
         Some(id) => cstr(identity_json(&id).to_string()),
         None => ptr::null_mut(),
+    }
+}
+
+/// Imports a development certificate (.p12) as the signing identity.
+/// 0: {"teamId","expires","serial"}; 1: error message. Free with icontain_string_free.
+#[no_mangle]
+pub unsafe extern "C" fn icontain_identity_import_p12(path: *const c_char, password: *const c_char, out_json: *mut *mut c_char) -> i32 {
+    if out_json.is_null() {
+        return 2;
+    }
+    let path = match req(path, "certificate path") { Ok(v) => v, Err(e) => { *out_json = cstr(e); return 1; } };
+    match import_p12(Path::new(&path), &opt(password, "")) {
+        Ok(id) => { *out_json = cstr(identity_json(&id).to_string()); 0 }
+        Err(e) => { *out_json = cstr(e); 1 }
     }
 }
 

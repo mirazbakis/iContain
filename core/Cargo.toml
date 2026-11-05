@@ -6,7 +6,7 @@ description = "C FFI for iContain: on-device signing, guest preparation and devi
 
 [lib]
 name = "icontain_ffi"
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 # Device side: pairing host, RPPairing tunnel to this device, AFC + installation_proxy over RSD.
@@ -39,6 +39,7 @@ apple-codesign-quick = "0.1.0"
 rsa = "0.9.10"
 x509-cert = "0.2.5"
 base64 = "0.22"
+p12-keystore = { package = "isideload-p12-keystore", version = "0.3.0-rc4" }
 sha1 = "0.10"
 sha2 = "0.10"
 zip = { version = "8.3", default-features = false, features = ["deflate"] }

@@ -11,7 +11,8 @@ struct iContainApp: App {
                 .environmentObject(account)
                 .onOpenURL { url in
                     // "Open in iContain" from Files or Safari hands over the file.
-                    if url.isFileURL { Task { await store.importItem(at: url) } }
+                    if url.isFileURL { Task { await store.importItem(at: url) }; return }
+                    Task { await store.handle(url) }
                 }
         }
     }
@@ -34,6 +35,16 @@ struct RootView: View {
         }
         .tint(Theme.accent)
         .preferredColorScheme(.dark)
+        .task {
+            // Same as the icontain:// links, for scripted testing:
+            //   --import-inbox, --open <app name or id>
+            let args = CommandLine.arguments
+            if args.contains("--import-inbox") { await store.handle(URL(string: "icontain://import-inbox")!) }
+            if let i = args.firstIndex(of: "--open"), i + 1 < args.count,
+               let url = URL(string: "icontain://open?app=\(args[i + 1].addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                await store.handle(url)
+            }
+        }
         .sheet(item: $account.twoFactor) { prompt in
             TwoFactorSheet(prompt: prompt)
         }

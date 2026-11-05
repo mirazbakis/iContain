@@ -75,6 +75,19 @@ final class AppleAccount: ObservableObject {
         identity = try? JSONDecoder().decode(Identity.self, from: Data(String(cString: raw).utf8))
     }
 
+    /// Uses a development certificate file (.p12) for signing instead of an Apple ID.
+    /// It must come from the same team as the certificate iContain itself is signed with.
+    func importCertificate(at url: URL, password: String) throws {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        var out: UnsafeMutablePointer<CChar>?
+        let rc = icontain_identity_import_p12(url.path, password, &out)
+        let text = out.map { String(cString: $0) } ?? ""
+        if let out { icontain_string_free(out) }
+        guard rc == 0 else { throw AccountError.failed(text.isEmpty ? String(localized: "Couldn't use that certificate.") : text) }
+        reloadIdentity()
+    }
+
     func forgetIdentity() {
         icontain_identity_forget()
         reloadIdentity()

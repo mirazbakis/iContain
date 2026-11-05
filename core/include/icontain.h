@@ -131,6 +131,7 @@ int32_t icontain_sign_guest(ICInstallSession *session,
                             char **out_json);
 
 /* The cached guest-signing identity as JSON, or NULL. Free with icontain_string_free. */
+int32_t icontain_identity_import_p12(const char *path, const char *password, char **out_json);
 char *icontain_identity_info(void);
 void icontain_identity_forget(void);
 

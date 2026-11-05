@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// One App ID on the team, for the More RAM list.
 struct TeamAppID: Identifiable, Hashable {
@@ -110,6 +111,10 @@ struct AccountView: View {
     @State private var customAnisette = ""
     @State private var anisetteMenu = ""
     @State private var anisetteReset = false
+    @State private var pickingCertificate = false
+    @State private var certificateFile: URL?
+    @State private var certificatePassword = ""
+    @State private var certificateMessage: String?
     private static let customTag = "custom"
 
     var body: some View {
@@ -130,6 +135,29 @@ struct AccountView: View {
             }
             .sheet(isPresented: $signingIn) {
                 SignInSheet { credentials in afterSignIn?(credentials) }
+            }
+            .fileImporter(isPresented: $pickingCertificate,
+                          allowedContentTypes: [UTType(filenameExtension: "p12") ?? .data, .data]) { result in
+                if case .success(let url) = result {
+                    certificatePassword = ""
+                    certificateFile = url
+                }
+            }
+            .alert("Certificate Password", isPresented: Binding(get: { certificateFile != nil }, set: { if !$0 { certificateFile = nil } })) {
+                SecureField("Password", text: $certificatePassword)
+                Button("Cancel", role: .cancel) { certificateFile = nil }
+                Button("Use Certificate") {
+                    guard let url = certificateFile else { return }
+                    do {
+                        try account.importCertificate(at: url, password: certificatePassword)
+                        certificateMessage = String(localized: "Certificate imported. Re-sign your apps to use it.")
+                    } catch {
+                        certificateMessage = error.localizedDescription
+                    }
+                    certificateFile = nil
+                }
+            } message: {
+                Text("Enter the password the .p12 file was exported with. Leave it empty if it has none.")
             }
             .slateScreen()
         }
@@ -190,9 +218,16 @@ struct AccountView: View {
                         .buttonStyle(PillButtonStyle(prominent: false))
                 }
             } else {
-                Text("No certificate yet. iContain gets one from your Apple ID the first time it signs an app.")
+                Text("No certificate yet. iContain gets one from your Apple ID the first time it signs an app, or you can use a certificate file.")
                     .font(.footnote).foregroundStyle(Theme.secondary)
             }
+            Button { pickingCertificate = true } label: { Label("Use a Certificate File (.p12)", systemImage: "doc.badge.key") }
+                .buttonStyle(PillButtonStyle(prominent: false))
+            if let certificateMessage {
+                Text(certificateMessage).font(.caption).foregroundStyle(Theme.secondary)
+            }
+            Text("A certificate file must be from the same team as the one iContain itself is signed with.")
+                .font(.caption2).foregroundStyle(Theme.secondary)
         }
     }
 

@@ -23,6 +23,9 @@ struct Guest: Codable, Identifiable, Hashable {
     /// Simulated location for this app, or nil for its real location.
     var location: SpoofedLocation?
     var sizeBytes: Int64?
+    /// Test mode: the device the app is told it's on (nil = this device), and its appearance.
+    var testDevice: String?
+    var testAppearance: TestAppearance?
 
     var isSimulatorBuild: Bool { builtFor == "simulator" }
 }
@@ -217,11 +220,32 @@ final class GuestStore: ObservableObject {
 
     func dataSize(_ guest: Guest) -> Int64 { Self.folderSize(Self.dataFolder(guest.id)) ?? 0 }
 
+    // MARK: - Links
+
+    /// icontain://import-inbox           imports everything in iContain's Files folder
+    /// icontain://open?app=<name or id>  opens an app (for Shortcuts and Home Screen links)
+    func handle(_ url: URL) async {
+        guard url.scheme == "icontain" else { return }
+        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        switch url.host {
+        case "import-inbox":
+            refreshInbox()
+            for file in inbox { await importFromInbox(file) }
+        case "open":
+            let key = query.first { $0.name == "app" }?.value ?? ""
+            if let guest = guests.first(where: { $0.id == key || $0.bundleID == key || $0.name.caseInsensitiveCompare(key) == .orderedSame }) {
+                launch(guest)
+            }
+        default:
+            break
+        }
+    }
+
     // MARK: - Launch
 
-    /// Writes the launch request, then relaunches iContain into the guest: opening our
-    /// own URL while exiting makes iOS start iContain again to deliver it, and main()
-    /// finds the request before any UI starts.
+    /// Writes the launch request and steps aside. The next time iContain starts (from
+    /// the notification it posts, or its icon), main() finds the request before any UI
+    /// starts and runs the app instead.
     func launch(_ guest: Guest) {
         if !Self.isSimulator, let expires = guest.signedExpires, expires < .now {
             phase = .failed(String(localized: "\(guest.name)'s signature has expired. Re-sign it first."))
@@ -232,6 +256,12 @@ final class GuestStore: ObservableObject {
             "dataPath": "Library/Application Support/iContain/Data/\(guest.id)",
             "bundleId": guest.bundleID,
         ]
+        if let device = DeviceProfile.find(guest.testDevice) {
+            request["device"] = device.request
+        }
+        if let appearance = guest.testAppearance, appearance != .system {
+            request["appearance"] = appearance.rawValue
+        }
         if let location = guest.location {
             request["location"] = ["latitude": location.latitude, "longitude": location.longitude, "altitude": location.altitude]
         }

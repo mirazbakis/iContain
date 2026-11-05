@@ -160,6 +160,7 @@ struct GuestTile: View {
     }
 
     private var subtitle: String {
+        if let device = DeviceProfile.find(guest.testDevice) { return device.name }
         if guest.isSimulatorBuild { return String(localized: "Simulator build") }
         return guest.version.isEmpty ? guest.bundleID : String(localized: "Version \(guest.version)")
     }
@@ -193,6 +194,7 @@ struct GuestDetailView: View {
                                           : String(localized: "Valid until \(expires.formatted(date: .abbreviated, time: .omitted))"))
                             }
                         }
+                        testPanel(guest)
                         locationPanel(guest)
                         Panel(title: "Manage", symbol: "wrench.and.screwdriver") {
                             Button { Task { await store.resign(guest) } } label: { Label("Re-sign", systemImage: "signature") }
@@ -236,6 +238,51 @@ struct GuestDetailView: View {
                 .frame(maxWidth: 220)
         }
         .padding(.vertical, 8)
+    }
+
+    private func testPanel(_ guest: Guest) -> some View {
+        Panel(title: "Test device", symbol: "iphone.and.ipad") {
+            Picker(selection: Binding(
+                get: { guest.testDevice ?? DeviceProfile.native },
+                set: { value in
+                    var updated = guest
+                    updated.testDevice = value == DeviceProfile.native ? nil : value
+                    store.update(updated)
+                })) {
+                Label("This device", systemImage: "iphone").tag(DeviceProfile.native)
+                Section("iPhone") {
+                    ForEach(DeviceProfile.all.filter { $0.kind == .phone }) { device in
+                        Label(device.name, systemImage: device.symbol).tag(device.id)
+                    }
+                }
+                Section("iPad") {
+                    ForEach(DeviceProfile.all.filter { $0.kind == .pad }) { device in
+                        Label(device.name, systemImage: device.symbol).tag(device.id)
+                    }
+                }
+            } label: {
+                Text("Device").foregroundStyle(.white)
+            }
+            .pickerStyle(.navigationLink)
+
+            if let device = DeviceProfile.find(guest.testDevice) {
+                DetailRow(title: "Screen", value: device.sizeText)
+            }
+
+            Picker("Appearance", selection: Binding(
+                get: { guest.testAppearance ?? .system },
+                set: { value in
+                    var updated = guest
+                    updated.testAppearance = value == .system ? nil : value
+                    store.update(updated)
+                })) {
+                ForEach(TestAppearance.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+
+            Text("The app is told it's running on this device: its screen size, safe areas, iPhone or iPad layout, and light or dark mode. It's shown in a frame, scaled to fit.")
+                .font(.caption).foregroundStyle(Theme.secondary)
+        }
     }
 
     private func locationPanel(_ guest: Guest) -> some View {
