@@ -34,7 +34,8 @@ pub(super) fn remove_extensions(app: &Path) -> Result<(), String> {
     for folder in ["PlugIns", "Extensions"] {
         let dir = app.join(folder);
         if dir.exists() {
-            std::fs::remove_dir_all(&dir).map_err(|e| err(&format!("Couldn't remove {folder}"), e))?;
+            std::fs::remove_dir_all(&dir)
+                .map_err(|e| err(&format!("Couldn't remove {folder}"), e))?;
         }
     }
     Ok(())
@@ -61,8 +62,12 @@ pub(super) async fn sign_with_main_profile<C: MaxCertsCallback>(
 
     let mut app = Application::new(app_dir).map_err(|e| err("Couldn't read the app", e))?;
     let special = app.get_special_app();
-    let main_bundle_id = app.main_bundle_id().map_err(|e| err("Couldn't read the bundle ID", e))?;
-    let main_name = app.main_app_name().map_err(|e| err("Couldn't read the app name", e))?;
+    let main_bundle_id = app
+        .main_bundle_id()
+        .map_err(|e| err("Couldn't read the bundle ID", e))?;
+    let main_name = app
+        .main_app_name()
+        .map_err(|e| err("Couldn't read the app name", e))?;
     let main_identifier = format!("{main_bundle_id}.{}", team.team_id);
     app.update_bundle_id(&main_bundle_id, &main_identifier)
         .map_err(|e| err("Couldn't update the bundle IDs", e))?;
@@ -72,10 +77,19 @@ pub(super) async fn sign_with_main_profile<C: MaxCertsCallback>(
         .list_app_ids(team, None::<DeveloperDeviceType>)
         .await
         .map_err(|e| err("Couldn't list App IDs", e))?;
-    let mut app_id = match existing.app_ids.into_iter().find(|a| a.identifier == main_identifier) {
+    let mut app_id = match existing
+        .app_ids
+        .into_iter()
+        .find(|a| a.identifier == main_identifier)
+    {
         Some(id) => id,
         None => dev
-            .add_app_id(team, &main_name, &main_identifier, None::<DeveloperDeviceType>)
+            .add_app_id(
+                team,
+                &main_name,
+                &main_identifier,
+                None::<DeveloperDeviceType>,
+            )
             .await
             .map_err(|e| err("Couldn't register the App ID", e))?,
     };
@@ -89,7 +103,12 @@ pub(super) async fn sign_with_main_profile<C: MaxCertsCallback>(
         }
     );
     let group = dev
-        .ensure_app_group(team, &main_name, &group_identifier, None::<DeveloperDeviceType>)
+        .ensure_app_group(
+            team,
+            &main_name,
+            &group_identifier,
+            None::<DeveloperDeviceType>,
+        )
         .await
         .map_err(|e| err("Couldn't register the app group", e))?;
     app_id
@@ -120,12 +139,17 @@ pub(super) async fn sign_with_main_profile<C: MaxCertsCallback>(
         .map(|id| (id, profile.clone(), entitlements.clone()))
         .collect();
 
-    app.bundle.write_info().map_err(|e| err("Couldn't write Info.plist", e))?;
+    app.bundle
+        .write_info()
+        .map_err(|e| err("Couldn't write Info.plist", e))?;
     for ext in app.bundle.app_extensions_mut() {
-        ext.write_info().map_err(|e| err("Couldn't write an extension's Info.plist", e))?;
+        ext.write_info()
+            .map_err(|e| err("Couldn't write an extension's Info.plist", e))?;
     }
     for framework in app.bundle.frameworks_mut() {
-        framework.write_info().map_err(|e| err("Couldn't write a framework's Info.plist", e))?;
+        framework
+            .write_info()
+            .map_err(|e| err("Couldn't write a framework's Info.plist", e))?;
     }
     cbs.progress("Signing…", 0.3);
 
@@ -133,9 +157,17 @@ pub(super) async fn sign_with_main_profile<C: MaxCertsCallback>(
         cbs.progress("Signing…", f64::from(f).clamp(0.0, 1.0));
         std::future::ready(())
     };
-    isideload::sideload::sign::sign(&mut app, &cert, &profile, &mut borrowed, &special, team, Some(sign_progress))
-        .await
-        .map_err(|e| err("Signing failed", e))?;
+    isideload::sideload::sign::sign(
+        &mut app,
+        &cert,
+        &profile,
+        &mut borrowed,
+        &special,
+        team,
+        Some(sign_progress),
+    )
+    .await
+    .map_err(|e| err("Signing failed", e))?;
 
     Ok(app.bundle.bundle_dir.clone())
 }
@@ -148,6 +180,10 @@ fn profile_entitlements(bytes: &[u8]) -> plist::Dictionary {
     };
     plist::from_bytes::<plist::Dictionary>(&bytes[start..end + b"</plist>".len()])
         .ok()
-        .and_then(|d| d.get("Entitlements").and_then(|v| v.as_dictionary()).cloned())
+        .and_then(|d| {
+            d.get("Entitlements")
+                .and_then(|v| v.as_dictionary())
+                .cloned()
+        })
         .unwrap_or_default()
 }

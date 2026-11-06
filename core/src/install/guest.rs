@@ -123,7 +123,9 @@ fn thin_arm64(data: &[u8]) -> Result<Option<Vec<u8>>, String> {
         }
         fallback.get_or_insert(slice);
     }
-    fallback.map(Some).ok_or_else(|| "has no arm64 code (it's an Intel build)".into())
+    fallback
+        .map(Some)
+        .ok_or_else(|| "has no arm64 code (it's an Intel build)".into())
 }
 
 struct Command {
@@ -147,7 +149,11 @@ fn commands(b: &[u8]) -> Result<Vec<Command>, String> {
         if size < 8 || o + size > b.len() {
             return Err("malformed load command".into());
         }
-        out.push(Command { offset: o, cmd: rd32(b, o), size });
+        out.push(Command {
+            offset: o,
+            cmd: rd32(b, o),
+            size,
+        });
         o += size;
     }
     Ok(out)
@@ -178,7 +184,11 @@ fn rewrite_executable_path(b: &mut [u8], cmd: &Command, name_field: usize) {
 }
 
 /// Patches one thin arm64 Mach-O. `target_platform` 0 leaves the platform alone.
-fn patch_macho(b: &mut Vec<u8>, target_platform: u32, make_library: Option<&str>) -> Result<MachInfo, String> {
+fn patch_macho(
+    b: &mut Vec<u8>,
+    target_platform: u32,
+    make_library: Option<&str>,
+) -> Result<MachInfo, String> {
     let mut info = MachInfo::default();
     let cmds = commands(b)?;
     let mut first_section_offset = usize::MAX;
@@ -219,7 +229,9 @@ fn patch_macho(b: &mut Vec<u8>, target_platform: u32, make_library: Option<&str>
         }
     }
 
-    let Some(executable_name) = make_library else { return Ok(info) };
+    let Some(executable_name) = make_library else {
+        return Ok(info);
+    };
     if info.encrypted {
         return Ok(info);
     }
@@ -278,8 +290,13 @@ fn patch_macho(b: &mut Vec<u8>, target_platform: u32, make_library: Option<&str>
 
 /// Thins, retags and (for the main executable) converts one file. Ok(None) when the
 /// file isn't a Mach-O.
-fn process_file(path: &Path, target_platform: u32, make_library: Option<&str>) -> Result<Option<MachInfo>, String> {
-    let data = std::fs::read(path).map_err(|e| err(&format!("Couldn't read {}", path.display()), e))?;
+fn process_file(
+    path: &Path,
+    target_platform: u32,
+    make_library: Option<&str>,
+) -> Result<Option<MachInfo>, String> {
+    let data =
+        std::fs::read(path).map_err(|e| err(&format!("Couldn't read {}", path.display()), e))?;
     let Some(mut thin) = thin_arm64(&data).map_err(|e| format!("{} {e}", file_name(path)))? else {
         return Ok(None);
     };
@@ -289,22 +306,29 @@ fn process_file(path: &Path, target_platform: u32, make_library: Option<&str>) -
     let info = patch_macho(&mut thin, target_platform, make_library)
         .map_err(|e| format!("{}: {e}", file_name(path)))?;
     if thin != data {
-        std::fs::write(path, &thin).map_err(|e| err(&format!("Couldn't write {}", path.display()), e))?;
+        std::fs::write(path, &thin)
+            .map_err(|e| err(&format!("Couldn't write {}", path.display()), e))?;
     }
     Ok(Some(info))
 }
 
 fn file_name(p: &Path) -> String {
-    p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
+    p.file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default()
 }
 
 // MARK: - Import
 
 fn walk_files(dir: &Path, out: &mut Vec<PathBuf>) {
-    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
     for entry in entries.flatten() {
         let path = entry.path();
-        let Ok(meta) = std::fs::symlink_metadata(&path) else { continue };
+        let Ok(meta) = std::fs::symlink_metadata(&path) else {
+            continue;
+        };
         if meta.file_type().is_symlink() {
             continue;
         }
@@ -337,12 +361,18 @@ fn copy_dir(from: &Path, to: &Path) -> std::io::Result<()> {
 
 /// Breadth-first search for the first .app folder, skipping macOS zip metadata.
 fn find_app(root: &Path) -> Option<PathBuf> {
-    if root.extension().is_some_and(|e| e.eq_ignore_ascii_case("app")) && root.join("Info.plist").exists() {
+    if root
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("app"))
+        && root.join("Info.plist").exists()
+    {
         return Some(root.to_path_buf());
     }
     let mut queue = std::collections::VecDeque::from([(root.to_path_buf(), 0usize)]);
     while let Some((dir, depth)) = queue.pop_front() {
-        let Ok(entries) = std::fs::read_dir(&dir) else { continue };
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
         let mut subdirs: Vec<PathBuf> = entries
             .flatten()
             .map(|e| e.path())
@@ -350,7 +380,9 @@ fn find_app(root: &Path) -> Option<PathBuf> {
             .collect();
         subdirs.sort();
         for p in &subdirs {
-            if p.extension().is_some_and(|e| e.eq_ignore_ascii_case("app")) && p.join("Info.plist").exists() {
+            if p.extension().is_some_and(|e| e.eq_ignore_ascii_case("app"))
+                && p.join("Info.plist").exists()
+            {
                 return Some(p.clone());
             }
         }
@@ -362,10 +394,17 @@ fn find_app(root: &Path) -> Option<PathBuf> {
 }
 
 fn info_string(info: &plist::Dictionary, key: &str) -> String {
-    info.get(key).and_then(|v| v.as_string()).unwrap_or_default().to_string()
+    info.get(key)
+        .and_then(|v| v.as_string())
+        .unwrap_or_default()
+        .to_string()
 }
 
-pub(super) fn prepare_guest(input: &Path, dest: &Path, target_platform: u32) -> Result<serde_json::Value, String> {
+pub(super) fn prepare_guest(
+    input: &Path,
+    dest: &Path,
+    target_platform: u32,
+) -> Result<serde_json::Value, String> {
     std::fs::create_dir_all(dest).map_err(|e| err("Couldn't create the app folder", e))?;
     let staging = dest.join(".import");
     let _ = std::fs::remove_dir_all(&staging);
@@ -376,25 +415,42 @@ pub(super) fn prepare_guest(input: &Path, dest: &Path, target_platform: u32) -> 
         copy_dir(input, &staging.join(&name)).map_err(|e| err("Couldn't copy the app", e))?;
     } else {
         let file = std::fs::File::open(input).map_err(|e| err("Couldn't open the file", e))?;
-        let mut archive = zip::ZipArchive::new(file)
-            .map_err(|e| err("This isn't an .ipa, .zip, .app or .xcarchive iContain can read", e))?;
-        archive.extract(&staging).map_err(|e| err("Couldn't unpack the file", e))?;
+        let mut archive = zip::ZipArchive::new(file).map_err(|e| {
+            err(
+                "This isn't an .ipa, .zip, .app or .xcarchive iContain can read",
+                e,
+            )
+        })?;
+        archive
+            .extract(&staging)
+            .map_err(|e| err("Couldn't unpack the file", e))?;
     }
 
-    let found = find_app(&staging).ok_or("No .app was found inside. Import an .ipa, an .xcarchive, or a zipped .app.")?;
+    let found = find_app(&staging)
+        .ok_or("No .app was found inside. Import an .ipa, an .xcarchive, or a zipped .app.")?;
     let app = dest.join(file_name(&found));
     let _ = std::fs::remove_dir_all(&app);
     std::fs::rename(&found, &app).map_err(|e| err("Couldn't move the app into place", e))?;
     let _ = std::fs::remove_dir_all(&staging);
 
     // The old signature and any watch app are of no use here.
-    for junk in ["_CodeSignature", "embedded.mobileprovision", "Watch", "com.apple.WatchPlaceholder", "SC_Info"] {
+    for junk in [
+        "_CodeSignature",
+        "embedded.mobileprovision",
+        "Watch",
+        "com.apple.WatchPlaceholder",
+        "SC_Info",
+    ] {
         let p = app.join(junk);
-        let _ = if p.is_dir() { std::fs::remove_dir_all(&p) } else { std::fs::remove_file(&p) };
+        let _ = if p.is_dir() {
+            std::fs::remove_dir_all(&p)
+        } else {
+            std::fs::remove_file(&p)
+        };
     }
 
-    let info: plist::Dictionary =
-        plist::from_file(app.join("Info.plist")).map_err(|e| err("Couldn't read the app's Info.plist", e))?;
+    let info: plist::Dictionary = plist::from_file(app.join("Info.plist"))
+        .map_err(|e| err("Couldn't read the app's Info.plist", e))?;
     let executable = info_string(&info, "CFBundleExecutable");
     if executable.is_empty() {
         return Err("The app's Info.plist doesn't name its executable.".into());
@@ -419,10 +475,14 @@ pub(super) fn prepare_guest(input: &Path, dest: &Path, target_platform: u32) -> 
         PLATFORM_IOS_SIMULATOR => "simulator",
         _ => "unknown",
     };
-    let display_name = [info_string(&info, "CFBundleDisplayName"), info_string(&info, "CFBundleName"), executable.clone()]
-        .into_iter()
-        .find(|s| !s.is_empty())
-        .unwrap_or_default();
+    let display_name = [
+        info_string(&info, "CFBundleDisplayName"),
+        info_string(&info, "CFBundleName"),
+        executable.clone(),
+    ]
+    .into_iter()
+    .find(|s| !s.is_empty())
+    .unwrap_or_default();
     Ok(serde_json::json!({
         "appPath": app.to_string_lossy(),
         "bundleId": info_string(&info, "CFBundleIdentifier"),
@@ -468,7 +528,10 @@ fn cert_team(cert: &Certificate) -> String {
                 if let Ok(s) = atv.value.decode_as::<x509_cert::der::asn1::Utf8StringRef>() {
                     return s.as_str().to_string();
                 }
-                if let Ok(s) = atv.value.decode_as::<x509_cert::der::asn1::PrintableStringRef>() {
+                if let Ok(s) = atv
+                    .value
+                    .decode_as::<x509_cert::der::asn1::PrintableStringRef>()
+                {
                     return s.as_str().to_string();
                 }
             }
@@ -481,16 +544,30 @@ fn cert_team(cert: &Certificate) -> String {
 fn import_p12(path: &Path, password: &str) -> Result<GuestIdentity, String> {
     use p12_keystore::{KeyStore, Pkcs12ImportPolicy};
     let data = std::fs::read(path).map_err(|e| err("Couldn't read the certificate file", e))?;
-    let store = KeyStore::from_pkcs12(&data, password, Pkcs12ImportPolicy::Relaxed)
-        .map_err(|e| err("Couldn't open the certificate file (check the password)", format!("{e:?}")))?;
-    let (_, chain) = store.private_key_chain().ok_or("The file has no private key.")?;
+    let store =
+        KeyStore::from_pkcs12(&data, password, Pkcs12ImportPolicy::Relaxed).map_err(|e| {
+            err(
+                "Couldn't open the certificate file (check the password)",
+                format!("{e:?}"),
+            )
+        })?;
+    let (_, chain) = store
+        .private_key_chain()
+        .ok_or("The file has no private key.")?;
     let key = RsaPrivateKey::from_pkcs8_der(chain.key().as_der())
         .map_err(|e| err("The private key isn't an RSA key iContain can use", e))?;
-    let cert_der = chain.certs().first().ok_or("The file has no certificate.")?.as_der();
-    let cert = Certificate::from_der(cert_der).map_err(|e| err("Couldn't read the certificate", e))?;
+    let cert_der = chain
+        .certs()
+        .first()
+        .ok_or("The file has no certificate.")?
+        .as_der();
+    let cert =
+        Certificate::from_der(cert_der).map_err(|e| err("Couldn't read the certificate", e))?;
     let team_id = cert_team(&cert);
     if team_id.is_empty() {
-        return Err("The certificate doesn't name a team. Use an Apple development certificate.".into());
+        return Err(
+            "The certificate doesn't name a team. Use an Apple development certificate.".into(),
+        );
     }
     let expires = cert_expiry(&cert);
     let chain = chain
@@ -499,13 +576,20 @@ fn import_p12(path: &Path, password: &str) -> Result<GuestIdentity, String> {
         .skip(1)
         .filter_map(|c| Certificate::from_der(c.as_der()).ok())
         .collect();
-    let id = GuestIdentity { team_id, key, cert, expires, chain };
+    let id = GuestIdentity {
+        team_id,
+        key,
+        cert,
+        expires,
+        chain,
+    };
     save_identity(&id)?;
     Ok(id)
 }
 
 fn load_identity() -> Option<GuestIdentity> {
-    let saved: serde_json::Value = serde_json::from_str(&identity_storage().retrieve(IDENTITY_KEY).ok()??).ok()?;
+    let saved: serde_json::Value =
+        serde_json::from_str(&identity_storage().retrieve(IDENTITY_KEY).ok()??).ok()?;
     use base64::Engine;
     let b64 = base64::engine::general_purpose::STANDARD;
     let key = RsaPrivateKey::from_pkcs8_der(&b64.decode(saved["key"].as_str()?).ok()?).ok()?;
@@ -520,15 +604,32 @@ fn load_identity() -> Option<GuestIdentity> {
                 .collect()
         })
         .unwrap_or_default();
-    Some(GuestIdentity { team_id: saved["teamId"].as_str()?.to_string(), key, cert, expires, chain })
+    Some(GuestIdentity {
+        team_id: saved["teamId"].as_str()?.to_string(),
+        key,
+        cert,
+        expires,
+        chain,
+    })
 }
 
 fn save_identity(id: &GuestIdentity) -> Result<(), String> {
     use base64::Engine;
     let b64 = base64::engine::general_purpose::STANDARD;
-    let key = id.key.to_pkcs8_der().map_err(|e| err("Couldn't save the signing key", e))?;
-    let cert = id.cert.to_der().map_err(|e| err("Couldn't save the certificate", e))?;
-    let chain: Vec<String> = id.chain.iter().filter_map(|c| c.to_der().ok()).map(|d| b64.encode(d)).collect();
+    let key = id
+        .key
+        .to_pkcs8_der()
+        .map_err(|e| err("Couldn't save the signing key", e))?;
+    let cert = id
+        .cert
+        .to_der()
+        .map_err(|e| err("Couldn't save the certificate", e))?;
+    let chain: Vec<String> = id
+        .chain
+        .iter()
+        .filter_map(|c| c.to_der().ok())
+        .map(|d| b64.encode(d))
+        .collect();
     let json = serde_json::json!({
         "teamId": id.team_id,
         "key": b64.encode(key.as_bytes()),
@@ -574,7 +675,11 @@ async fn fetch_identity(
             cbs.prompt(PROMPT_REVOKE_CERTS, &json);
             let reply = replies.lock().await.recv().await.unwrap_or_default();
             let serials: Vec<String> = serde_json::from_str(&reply).unwrap_or_default();
-            Ok::<_, rootcause::Report>(if serials.is_empty() { None } else { Some(serials) })
+            Ok::<_, rootcause::Report>(if serials.is_empty() {
+                None
+            } else {
+                Some(serials)
+            })
         }
     };
     let storage = FileStorage::new("signing", None);
@@ -608,12 +713,18 @@ async fn fetch_identity(
 fn signing_chain(id: &GuestIdentity) -> Result<Vec<Certificate>, String> {
     let mut candidates = id.chain.clone();
     for der in [APPLE_WWDR_G3_CERTIFICATE_DER, APPLE_ROOT] {
-        candidates.push(Certificate::from_der(der).map_err(|e| err("Couldn't read Apple's certificates", e))?);
+        candidates.push(
+            Certificate::from_der(der).map_err(|e| err("Couldn't read Apple's certificates", e))?,
+        );
     }
     let mut chain = Vec::new();
     let mut issuer = id.cert.tbs_certificate.issuer.clone();
     while chain.len() < 4 {
-        let Some(next) = candidates.iter().find(|c| c.tbs_certificate.subject == issuer).cloned() else {
+        let Some(next) = candidates
+            .iter()
+            .find(|c| c.tbs_certificate.subject == issuer)
+            .cloned()
+        else {
             return Err(format!(
                 "The certificate's issuer ({issuer}) is missing. Export the .p12 with its full certificate chain."
             ));
@@ -630,7 +741,11 @@ fn signing_chain(id: &GuestIdentity) -> Result<Vec<Certificate>, String> {
 
 fn sign_app(app: &Path, identity: Option<&GuestIdentity>) -> Result<(), String> {
     let signer = match identity {
-        Some(id) => Some(RustCryptoCmsSigner::new(id.key.clone(), id.cert.clone(), signing_chain(id)?)),
+        Some(id) => Some(RustCryptoCmsSigner::new(
+            id.key.clone(),
+            id.cert.clone(),
+            signing_chain(id)?,
+        )),
         None => None,
     };
     let team = identity.map(|i| i.team_id.clone()).unwrap_or_default();
@@ -659,13 +774,18 @@ fn rehash_signatures(app: &Path) -> Result<(), String> {
     let mut files = Vec::new();
     walk_files(app, &mut files);
     for path in files {
-        let Ok(mut b) = std::fs::read(&path) else { continue };
+        let Ok(mut b) = std::fs::read(&path) else {
+            continue;
+        };
         if b.len() < 32 || rd32(&b, 0) != MH_MAGIC_64 {
             continue;
         }
         let Ok(cmds) = commands(&b) else { continue };
         let Some(sig) = cmds.iter().find(|c| c.cmd == LC_CODE_SIGNATURE) else {
-            return Err(format!("{} isn't signed. Build it again with Xcode.", file_name(&path)));
+            return Err(format!(
+                "{} isn't signed. Build it again with Xcode.",
+                file_name(&path)
+            ));
         };
         let start = rd32(&b, sig.offset + 8) as usize;
         let size = rd32(&b, sig.offset + 12) as usize;
@@ -699,7 +819,8 @@ fn rehash_signatures(app: &Path) -> Result<(), String> {
                 b[at..at + n].copy_from_slice(&digest[..n]);
             }
         }
-        std::fs::write(&path, &b).map_err(|e| err(&format!("Couldn't write {}", path.display()), e))?;
+        std::fs::write(&path, &b)
+            .map_err(|e| err(&format!("Couldn't write {}", path.display()), e))?;
     }
     Ok(())
 }
@@ -712,12 +833,16 @@ fn mark_ad_hoc(app: &Path) -> Result<(), String> {
     let mut files = Vec::new();
     walk_files(app, &mut files);
     for path in files {
-        let Ok(mut b) = std::fs::read(&path) else { continue };
+        let Ok(mut b) = std::fs::read(&path) else {
+            continue;
+        };
         if b.len() < 32 || rd32(&b, 0) != MH_MAGIC_64 {
             continue;
         }
         let Ok(cmds) = commands(&b) else { continue };
-        let Some(sig) = cmds.iter().find(|c| c.cmd == LC_CODE_SIGNATURE) else { continue };
+        let Some(sig) = cmds.iter().find(|c| c.cmd == LC_CODE_SIGNATURE) else {
+            continue;
+        };
         let start = rd32(&b, sig.offset + 8) as usize;
         let size = rd32(&b, sig.offset + 12) as usize;
         if start + size > b.len() || size < 12 || rdbe32(&b, start) != CSMAGIC_EMBEDDED_SIGNATURE {
@@ -738,7 +863,8 @@ fn mark_ad_hoc(app: &Path) -> Result<(), String> {
             }
         }
         if changed {
-            std::fs::write(&path, &b).map_err(|e| err(&format!("Couldn't write {}", path.display()), e))?;
+            std::fs::write(&path, &b)
+                .map_err(|e| err(&format!("Couldn't write {}", path.display()), e))?;
         }
     }
     Ok(())
@@ -805,8 +931,15 @@ pub unsafe extern "C" fn icontain_sign_guest(
         *out_json = cstr(msg);
         1
     };
-    let app = match req(app_path, "app path") { Ok(v) => PathBuf::from(v), Err(e) => return fail(e) };
-    let cbs = Callbacks { progress: progress_cb, prompt: prompt_cb, ctx };
+    let app = match req(app_path, "app path") {
+        Ok(v) => PathBuf::from(v),
+        Err(e) => return fail(e),
+    };
+    let cbs = Callbacks {
+        progress: progress_cb,
+        prompt: prompt_cb,
+        ctx,
+    };
 
     if mode == 0 {
         cbs.progress("Signing…", -1.0);
@@ -819,15 +952,22 @@ pub unsafe extern "C" fn icontain_sign_guest(
         };
     }
 
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs() as i64);
-    let cached = if mode == 1 { load_identity().filter(|i| i.expires > now + 3600) } else { None };
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs() as i64);
+    let cached = if mode == 1 {
+        load_identity().filter(|i| i.expires > now + 3600)
+    } else {
+        None
+    };
     let identity = match cached {
         Some(id) => id,
         None => {
             let apple_id = opt(apple_id, "");
             let password = opt(password, "");
             if apple_id.is_empty() || password.is_empty() {
-                *out_json = cstr("Sign in with your Apple ID so iContain can get a signing certificate.");
+                *out_json =
+                    cstr("Sign in with your Apple ID so iContain can get a signing certificate.");
                 return 3;
             }
             let anisette = opt(anisette_url, "https://ani.jkcoxson.com");
@@ -835,11 +975,20 @@ pub unsafe extern "C" fn icontain_sign_guest(
             let (tx, rx) = mpsc::unbounded_channel();
             *session.responder.lock().unwrap() = Some(tx);
             session.cancelled.store(false, Ordering::SeqCst);
-            let rt = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+            let rt = match tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+            {
                 Ok(rt) => rt,
                 Err(e) => return fail(format!("failed to start runtime: {e}")),
             };
-            let result = rt.block_on(fetch_identity(&apple_id, &password, &anisette, cbs, Arc::new(AsyncMutex::new(rx))));
+            let result = rt.block_on(fetch_identity(
+                &apple_id,
+                &password,
+                &anisette,
+                cbs,
+                Arc::new(AsyncMutex::new(rx)),
+            ));
             *session.responder.lock().unwrap() = None;
             match result {
                 Ok(id) => id,
@@ -870,14 +1019,30 @@ pub unsafe extern "C" fn icontain_identity_info() -> *mut c_char {
 /// Imports a development certificate (.p12) as the signing identity.
 /// 0: {"teamId","expires","serial"}; 1: error message. Free with icontain_string_free.
 #[no_mangle]
-pub unsafe extern "C" fn icontain_identity_import_p12(path: *const c_char, password: *const c_char, out_json: *mut *mut c_char) -> i32 {
+pub unsafe extern "C" fn icontain_identity_import_p12(
+    path: *const c_char,
+    password: *const c_char,
+    out_json: *mut *mut c_char,
+) -> i32 {
     if out_json.is_null() {
         return 2;
     }
-    let path = match req(path, "certificate path") { Ok(v) => v, Err(e) => { *out_json = cstr(e); return 1; } };
+    let path = match req(path, "certificate path") {
+        Ok(v) => v,
+        Err(e) => {
+            *out_json = cstr(e);
+            return 1;
+        }
+    };
     match import_p12(Path::new(&path), &opt(password, "")) {
-        Ok(id) => { *out_json = cstr(identity_json(&id).to_string()); 0 }
-        Err(e) => { *out_json = cstr(e); 1 }
+        Ok(id) => {
+            *out_json = cstr(identity_json(&id).to_string());
+            0
+        }
+        Err(e) => {
+            *out_json = cstr(e);
+            1
+        }
     }
 }
 
@@ -893,6 +1058,8 @@ mod tests {
     #[test]
     fn non_macho_files_are_left_alone() {
         assert!(thin_arm64(b"hello world").unwrap().is_none());
-        assert!(thin_arm64(&[0xca, 0xfe, 0xba, 0xbe, 0, 0, 0, 50]).unwrap().is_none());
+        assert!(thin_arm64(&[0xca, 0xfe, 0xba, 0xbe, 0, 0, 0, 50])
+            .unwrap()
+            .is_none());
     }
 }

@@ -23,7 +23,11 @@ pub(super) async fn sign_in(
         .map(str::trim)
         .filter(|u| !u.is_empty())
         .collect();
-    let urls = if urls.is_empty() { vec!["https://ani.jkcoxson.com"] } else { urls };
+    let urls = if urls.is_empty() {
+        vec!["https://ani.jkcoxson.com"]
+    } else {
+        urls
+    };
 
     // v1.3.0 saved the developer token here; it's no longer used, so don't keep it.
     let _ = FileStorage::new("session", None).delete("xcode");
@@ -35,7 +39,10 @@ pub(super) async fn sign_in(
     let mut refused = false;
     for (i, url) in urls.iter().enumerate() {
         if i > 0 {
-            cbs.progress(&format!("Signing in to Apple (trying {})…", host_of(url)), -1.0);
+            cbs.progress(
+                &format!("Signing in to Apple (trying {})…", host_of(url)),
+                -1.0,
+            );
         }
         match sign_in_with(apple_id, password, url, cbs, replies.clone()).await {
             Ok(session) => {
@@ -124,7 +131,12 @@ pub(super) async fn sign_in_with(
 
     DeveloperSession::from_account(&mut account)
         .await
-        .map_err(|e| (err("Couldn't open a developer session", &e), format!("{e} {e:?}")))
+        .map_err(|e| {
+            (
+                err("Couldn't open a developer session", &e),
+                format!("{e} {e:?}"),
+            )
+        })
 }
 
 // MARK: - Limits
@@ -150,16 +162,21 @@ fn pause_storage() -> FileStorage {
 }
 
 fn now_secs() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs())
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
 }
 
 fn saved_pause(apple_id: &str) -> Option<serde_json::Value> {
-    let saved: serde_json::Value = serde_json::from_str(&pause_storage().retrieve(PAUSE_KEY).ok()??).ok()?;
+    let saved: serde_json::Value =
+        serde_json::from_str(&pause_storage().retrieve(PAUSE_KEY).ok()??).ok()?;
     (saved["appleID"].as_str()? == apple_id.to_lowercase()).then_some(saved)
 }
 
 fn check_pause(apple_id: &str) -> Result<(), String> {
-    let until = saved_pause(apple_id).and_then(|saved| saved["until"].as_u64()).unwrap_or(0);
+    let until = saved_pause(apple_id)
+        .and_then(|saved| saved["until"].as_u64())
+        .unwrap_or(0);
     let now = now_secs();
     if until > now {
         let minutes = (until - now).div_ceil(60);
@@ -171,8 +188,15 @@ fn check_pause(apple_id: &str) -> Result<(), String> {
 }
 
 fn record_rejection(apple_id: &str, pause_now: bool) {
-    let rejections = saved_pause(apple_id).and_then(|saved| saved["rejections"].as_u64()).unwrap_or(0) + 1;
-    let until = if pause_now || rejections >= REJECTIONS_BEFORE_PAUSE { now_secs() + PAUSE_SECS } else { 0 };
+    let rejections = saved_pause(apple_id)
+        .and_then(|saved| saved["rejections"].as_u64())
+        .unwrap_or(0)
+        + 1;
+    let until = if pause_now || rejections >= REJECTIONS_BEFORE_PAUSE {
+        now_secs() + PAUSE_SECS
+    } else {
+        0
+    };
     let saved = serde_json::json!({
         "appleID": apple_id.to_lowercase(),
         "rejections": rejections,
@@ -214,15 +238,41 @@ fn classify_failure(message: &str) -> SignInFailure {
             _ => SignInFailure::Other,
         };
     }
-    let user_side = ["incorrect", "password", "2fa", "two-factor", "verification code", "cancel", "abort", "locked", "disabled"];
+    let user_side = [
+        "incorrect",
+        "password",
+        "2fa",
+        "two-factor",
+        "verification code",
+        "cancel",
+        "abort",
+        "locked",
+        "disabled",
+    ];
     if user_side.iter().any(|s| m.contains(s)) {
         return SignInFailure::Other;
     }
     let anisette = [
-        "anisette", "provision", "client info", "client_info", "websocket", "error sending request",
-        "timed out", "connection", "dns", "certificate verify", "status code 5", "502", "503", "504",
+        "anisette",
+        "provision",
+        "client info",
+        "client_info",
+        "websocket",
+        "error sending request",
+        "timed out",
+        "connection",
+        "dns",
+        "certificate verify",
+        "status code 5",
+        "502",
+        "503",
+        "504",
     ];
-    if anisette.iter().any(|s| m.contains(s)) { SignInFailure::Anisette } else { SignInFailure::Other }
+    if anisette.iter().any(|s| m.contains(s)) {
+        SignInFailure::Anisette
+    } else {
+        SignInFailure::Other
+    }
 }
 
 fn auth_error_code(lowercased: &str) -> Option<i64> {
@@ -248,9 +298,18 @@ mod tests {
     fn apple_codes_decide_over_the_rest_of_the_report() {
         let wrong = "Auth error -22406: Your Apple ID or password was incorrect. src/anisette/remote_v3.rs connection";
         assert_eq!(classify_failure(wrong), SignInFailure::PasswordOrAnisette);
-        assert_eq!(classify_failure("Auth error -20209: This Apple ID has been locked"), SignInFailure::Locked);
-        assert_eq!(classify_failure("Auth error -80045: password anisette"), SignInFailure::Anisette);
-        assert_eq!(classify_failure("Auth error -99999: Something else"), SignInFailure::Other);
+        assert_eq!(
+            classify_failure("Auth error -20209: This Apple ID has been locked"),
+            SignInFailure::Locked
+        );
+        assert_eq!(
+            classify_failure("Auth error -80045: password anisette"),
+            SignInFailure::Anisette
+        );
+        assert_eq!(
+            classify_failure("Auth error -99999: Something else"),
+            SignInFailure::Other
+        );
     }
 
     #[test]
@@ -262,9 +321,21 @@ mod tests {
 
     #[test]
     fn without_a_code_only_server_problems_move_on() {
-        assert_eq!(classify_failure("Failed to get anisette data for login"), SignInFailure::Anisette);
-        assert_eq!(classify_failure("Failed to get anisette data for 2FA"), SignInFailure::Other);
-        assert_eq!(classify_failure("No 2FA code provided, aborting"), SignInFailure::Other);
-        assert_eq!(classify_failure("Received 429 Too Many Requests, no retries left"), SignInFailure::RateLimited);
+        assert_eq!(
+            classify_failure("Failed to get anisette data for login"),
+            SignInFailure::Anisette
+        );
+        assert_eq!(
+            classify_failure("Failed to get anisette data for 2FA"),
+            SignInFailure::Other
+        );
+        assert_eq!(
+            classify_failure("No 2FA code provided, aborting"),
+            SignInFailure::Other
+        );
+        assert_eq!(
+            classify_failure("Received 429 Too Many Requests, no retries left"),
+            SignInFailure::RateLimited
+        );
     }
 }

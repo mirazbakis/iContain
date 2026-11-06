@@ -18,7 +18,8 @@ pub(super) async fn open_tunnel_to(
     // Try advertisements that prove they belong to the paired device first.
     let mut endpoints = endpoints.to_vec();
     if let Some(irk) = rpf.alt_irk().map(<[u8]>::to_vec) {
-        endpoints.sort_by_key(|ep| !PeerDevice::validate_auth_tag(&irk, &ep.identifier, &ep.auth_tag));
+        endpoints
+            .sort_by_key(|ep| !PeerDevice::validate_auth_tag(&irk, &ep.identifier, &ep.auth_tag));
     }
     if endpoints.is_empty() {
         return Err("No address to reach this iPhone was given.".into());
@@ -49,17 +50,18 @@ pub(super) async fn connect_endpoint(
 
     let mut last = "no addresses".to_string();
     for addr in addrs {
-        let stream = match tokio::time::timeout(Duration::from_secs(5), TcpStream::connect(addr)).await {
-            Ok(Ok(s)) => s,
-            Ok(Err(e)) => {
-                last = e.to_string();
-                continue;
-            }
-            Err(_) => {
-                last = "timed out".into();
-                continue;
-            }
-        };
+        let stream =
+            match tokio::time::timeout(Duration::from_secs(5), TcpStream::connect(addr)).await {
+                Ok(Ok(s)) => s,
+                Ok(Err(e)) => {
+                    last = e.to_string();
+                    continue;
+                }
+                Err(_) => {
+                    last = "timed out".into();
+                    continue;
+                }
+            };
 
         let mut rpc = RemotePairingClient::new(RpPairingSocket::new(stream), host_name);
         rpc.attempt_pair_verify()
@@ -67,7 +69,8 @@ pub(super) async fn connect_endpoint(
             .map_err(|e| err("pair-verify handshake", e))?;
         // Only verify: never fall back to a fresh pair-setup here.
         rpc.validate_pairing(rpf).await.map_err(|_| {
-            "this iPhone no longer accepts the pairing file. Create a new one in the Pair tab.".to_string()
+            "this iPhone no longer accepts the pairing file. Create a new one in the Pair tab."
+                .to_string()
         })?;
 
         let tunnel_port = rpc
@@ -77,7 +80,9 @@ pub(super) async fn connect_endpoint(
         let mut tunnel_addr = addr;
         tunnel_addr.set_port(tunnel_port);
         let tunnel_stream =
-            match tokio::time::timeout(Duration::from_secs(10), TcpStream::connect(tunnel_addr)).await {
+            match tokio::time::timeout(Duration::from_secs(10), TcpStream::connect(tunnel_addr))
+                .await
+            {
                 Ok(Ok(s)) => s,
                 Ok(Err(e)) => return Err(err("tunnel connect", e)),
                 Err(_) => return Err("tunnel connect timed out".into()),

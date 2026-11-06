@@ -36,8 +36,8 @@ use idevice::tcp::handle::AdapterHandle;
 use idevice::RsdService;
 
 use super::{
-    cstr, err, init_once, open_tunnel_to, opt, req, ICInstallConfig, ICProgressCb,
-    Callbacks, Endpoint,
+    cstr, err, init_once, open_tunnel_to, opt, req, Callbacks, Endpoint, ICInstallConfig,
+    ICProgressCb,
 };
 
 /// Runs one device op. `config` only needs `pairing_file_path`, `host_name` and
@@ -103,14 +103,20 @@ pub unsafe extern "C" fn icontain_device_run(
             }
         }
     }
-    let request: serde_json::Value =
-        match serde_json::from_str(&opt(request_json, "{}")) {
-            Ok(v) => v,
-            Err(e) => return fail(err("Bad request", e)),
-        };
+    let request: serde_json::Value = match serde_json::from_str(&opt(request_json, "{}")) {
+        Ok(v) => v,
+        Err(e) => return fail(err("Bad request", e)),
+    };
 
-    let cbs = Callbacks { progress: progress_cb, prompt: None, ctx };
-    let rt = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+    let cbs = Callbacks {
+        progress: progress_cb,
+        prompt: None,
+        ctx,
+    };
+    let rt = match tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+    {
         Ok(rt) => rt,
         Err(e) => return fail(format!("failed to start runtime: {e}")),
     };
@@ -134,13 +140,24 @@ async fn run(
     cbs.progress("Opening device link…", -1.0);
     let (mut adapter, mut handshake) = open_tunnel_to(&pairing, &host_name, &endpoints).await?;
 
-    let op = request.get("op").and_then(|v| v.as_str()).unwrap_or_default();
+    let op = request
+        .get("op")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default();
     let protect = string_set(&request, "protect").unwrap_or_default();
     match op {
         "install_app" => {
             let path = string_field(&request, "path")?;
             let active = string_set(&request, "activeProfiles");
-            install_app(&mut adapter, &mut handshake, Path::new(&path), active, &protect, cbs).await?;
+            install_app(
+                &mut adapter,
+                &mut handshake,
+                Path::new(&path),
+                active,
+                &protect,
+                cbs,
+            )
+            .await?;
             Ok(serde_json::json!({ "ok": true }))
         }
         "install_profiles" => {
@@ -149,7 +166,8 @@ async fn run(
             let mut profiles = Vec::new();
             for p in paths {
                 let data = std::fs::read(&p).map_err(|e| err("Couldn't read a profile", e))?;
-                profiles.push(Profile::parse(data).ok_or("A provisioning profile couldn't be read.")?);
+                profiles
+                    .push(Profile::parse(data).ok_or("A provisioning profile couldn't be read.")?);
             }
             cbs.progress("Installing profiles…", -1.0);
             let mut mis = misagent(&mut adapter, &mut handshake).await?;
@@ -165,12 +183,15 @@ async fn run(
                     remove_profiles(&mut mis, None, Some(&keep), true).await?;
                 }
                 None => {
-                    let ids: HashSet<String> = profiles.iter().map(|p| p.bundle_id.clone()).collect();
+                    let ids: HashSet<String> =
+                        profiles.iter().map(|p| p.bundle_id.clone()).collect();
                     remove_profiles(&mut mis, Some(&ids), None, false).await?;
                 }
             }
             for p in profiles {
-                mis.install(p.data).await.map_err(|e| err("Couldn't install a profile", e))?;
+                mis.install(p.data)
+                    .await
+                    .map_err(|e| err("Couldn't install a profile", e))?;
             }
             Ok(serde_json::json!({ "ok": true }))
         }
@@ -216,8 +237,14 @@ async fn run(
             Ok(serde_json::json!({ "pid": pid }))
         }
         "simulate_location" => {
-            let lat = request.get("lat").and_then(|v| v.as_f64()).ok_or("Missing latitude.")?;
-            let lon = request.get("lon").and_then(|v| v.as_f64()).ok_or("Missing longitude.")?;
+            let lat = request
+                .get("lat")
+                .and_then(|v| v.as_f64())
+                .ok_or("Missing latitude.")?;
+            let lon = request
+                .get("lon")
+                .and_then(|v| v.as_f64())
+                .ok_or("Missing longitude.")?;
             let dir = string_field(&request, "ddiDir")?;
             ensure_ddi(&mut adapter, &mut handshake, &dir, cbs).await?;
             simulate_location(&mut adapter, &mut handshake, lat, lon, cbs).await?;
@@ -236,11 +263,20 @@ async fn run(
                 .into_iter()
                 .map(|(bundle_id, info)| {
                     let d = info.as_dictionary().cloned().unwrap_or_default();
-                    let s = |k: &str| d.get(k).and_then(|v| v.as_string()).unwrap_or_default().to_string();
+                    let s = |k: &str| {
+                        d.get(k)
+                            .and_then(|v| v.as_string())
+                            .unwrap_or_default()
+                            .to_string()
+                    };
                     let b = |k: &str| d.get(k).and_then(|v| v.as_boolean()).unwrap_or(false);
                     let name = {
                         let n = s("CFBundleDisplayName");
-                        if n.is_empty() { s("CFBundleName") } else { n }
+                        if n.is_empty() {
+                            s("CFBundleName")
+                        } else {
+                            n
+                        }
                     };
                     let debuggable = d
                         .get("Entitlements")
@@ -258,7 +294,11 @@ async fn run(
                 })
                 .collect();
             list.sort_by(|a, b| {
-                a["name"].as_str().unwrap_or("").to_lowercase().cmp(&b["name"].as_str().unwrap_or("").to_lowercase())
+                a["name"]
+                    .as_str()
+                    .unwrap_or("")
+                    .to_lowercase()
+                    .cmp(&b["name"].as_str().unwrap_or("").to_lowercase())
             });
             Ok(serde_json::Value::Array(list))
         }
@@ -267,13 +307,23 @@ async fn run(
             let source = string_field(&request, "source")?;
             let name = string_field(&request, "name")?;
             cbs.progress("Copying the file into the app…", -1.0);
-            place_file(&mut adapter, &mut handshake, &bundle_id, Path::new(&source), &name).await?;
+            place_file(
+                &mut adapter,
+                &mut handshake,
+                &bundle_id,
+                Path::new(&source),
+                &name,
+            )
+            .await?;
             Ok(serde_json::json!({ "ok": true }))
         }
         "merge_plist" => {
             let bundle_id = string_field(&request, "bundleId")?;
             let name = string_field(&request, "name")?;
-            let values = request.get("values").and_then(|v| v.as_object()).ok_or("missing values")?;
+            let values = request
+                .get("values")
+                .and_then(|v| v.as_object())
+                .ok_or("missing values")?;
             merge_plist(&mut adapter, &mut handshake, &bundle_id, &name, values).await?;
             Ok(serde_json::json!({ "ok": true }))
         }
@@ -300,7 +350,10 @@ async fn install_app(
     cbs: Callbacks,
 ) -> Result<(), String> {
     cbs.progress("Preparing the app…", -1.0);
-    let (work, app_dir) = if path.extension().is_some_and(|x| x.eq_ignore_ascii_case("app")) {
+    let (work, app_dir) = if path
+        .extension()
+        .is_some_and(|x| x.eq_ignore_ascii_case("app"))
+    {
         (None, path.to_path_buf())
     } else {
         let (work, app) = unpack(path)?;
@@ -345,9 +398,14 @@ async fn install_unpacked(
     }
 
     cbs.progress("Installing…", 0.0);
-    let install = isideload::sideload::install::install_app_rsd(adapter, handshake, app_dir, move |p: u64| {
-        cbs.progress("Installing…", (p as f64 / 100.0).clamp(0.0, 1.0));
-    })
+    let install = isideload::sideload::install::install_app_rsd(
+        adapter,
+        handshake,
+        app_dir,
+        move |p: u64| {
+            cbs.progress("Installing…", (p as f64 / 100.0).clamp(0.0, 1.0));
+        },
+    )
     .await
     .map_err(|e| err("Install failed", e));
 
@@ -386,7 +444,9 @@ fn unpack(ipa: &Path) -> Result<(PathBuf, PathBuf), String> {
     std::fs::create_dir_all(&work).map_err(|e| err("temp dir", e))?;
     let file = std::fs::File::open(ipa).map_err(|e| err("Couldn't open the app", e))?;
     let mut archive = zip::ZipArchive::new(file).map_err(|e| err("Not a valid IPA", e))?;
-    archive.extract(&work).map_err(|e| err("Couldn't unpack the app", e))?;
+    archive
+        .extract(&work)
+        .map_err(|e| err("Couldn't unpack the app", e))?;
     let app = std::fs::read_dir(work.join("Payload"))
         .map_err(|e| err("IPA has no Payload folder", e))?
         .filter_map(Result::ok)
@@ -401,7 +461,10 @@ fn bundle_profiles(app: &Path) -> Vec<Profile> {
     let mut out = Vec::new();
     let mut stack = vec![app.to_path_buf()];
     while let Some(dir) = stack.pop() {
-        if let Some(p) = std::fs::read(dir.join("embedded.mobileprovision")).ok().and_then(Profile::parse) {
+        if let Some(p) = std::fs::read(dir.join("embedded.mobileprovision"))
+            .ok()
+            .and_then(Profile::parse)
+        {
             out.push(p);
         }
         for sub in ["PlugIns", "Extensions"] {
@@ -443,19 +506,34 @@ impl Profile {
             .and_then(|e| e.get("application-identifier"))
             .and_then(|v| v.as_string())
             .unwrap_or_default();
-        let bundle_id = app_id.split_once('.').map(|(_, rest)| rest.to_string()).unwrap_or_default();
-        let free = dict.get("LocalProvision").and_then(|v| v.as_boolean()).unwrap_or(false);
+        let bundle_id = app_id
+            .split_once('.')
+            .map(|(_, rest)| rest.to_string())
+            .unwrap_or_default();
+        let free = dict
+            .get("LocalProvision")
+            .and_then(|v| v.as_boolean())
+            .unwrap_or(false);
         let expires = dict
             .get("ExpirationDate")
             .and_then(|v| v.as_date())
             .and_then(|d| SystemTime::from(d).duration_since(UNIX_EPOCH).ok())
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
-        Some(Self { data, uuid, bundle_id, free, expires })
+        Some(Self {
+            data,
+            uuid,
+            bundle_id,
+            free,
+            expires,
+        })
     }
 }
 
-async fn misagent(adapter: &mut AdapterHandle, handshake: &mut RsdHandshake) -> Result<MisagentClient, String> {
+async fn misagent(
+    adapter: &mut AdapterHandle,
+    handshake: &mut RsdHandshake,
+) -> Result<MisagentClient, String> {
     MisagentClient::connect_rsd(adapter, handshake)
         .await
         .map_err(|e| err("Couldn't reach misagent", e))
@@ -558,9 +636,13 @@ async fn merge_plist(
 
     let mut dict = plist::Dictionary::new();
     if let Ok(mut file) = afc.open(path.clone(), AfcFopenMode::RdOnly).await {
-        let existing = file.read_entire().await.map_err(|e| err("Couldn't read the app's settings", e));
+        let existing = file
+            .read_entire()
+            .await
+            .map_err(|e| err("Couldn't read the app's settings", e));
         let _ = file.close().await;
-        dict = plist::from_bytes(&existing?).map_err(|e| err("Couldn't read the app's settings", e))?;
+        dict = plist::from_bytes(&existing?)
+            .map_err(|e| err("Couldn't read the app's settings", e))?;
     }
     for (key, value) in values {
         let value = match value {
@@ -572,12 +654,15 @@ async fn merge_plist(
     }
 
     let mut data = Vec::new();
-    plist::to_writer_binary(&mut data, &dict).map_err(|e| err("Couldn't write the app's settings", e))?;
+    plist::to_writer_binary(&mut data, &dict)
+        .map_err(|e| err("Couldn't write the app's settings", e))?;
     // Swapped in by a rename, as iOS saves settings: it can keep serving its cached
     // copy of a file rewritten in place.
     let staging = format!("{path}.icontain");
     write_to_container(&mut afc, &staging, &data).await?;
-    afc.rename(staging, path).await.map_err(|e| err("Couldn't save the app's settings", e))
+    afc.rename(staging, path)
+        .await
+        .map_err(|e| err("Couldn't save the app's settings", e))
 }
 
 async fn open_container(
@@ -629,7 +714,9 @@ async fn write_to_container(afc: &mut AfcClient, name: &str, data: &[u8]) -> Res
     file.write_entire(data)
         .await
         .map_err(|e| err("Couldn't write the file", e))?;
-    file.close().await.map_err(|e| err("Couldn't finish writing", e))?;
+    file.close()
+        .await
+        .map_err(|e| err("Couldn't finish writing", e))?;
     Ok(())
 }
 
@@ -646,13 +733,21 @@ fn string_field(v: &serde_json::Value, key: &str) -> Result<String, String> {
 fn string_list(v: &serde_json::Value, key: &str) -> Vec<String> {
     v.get(key)
         .and_then(|x| x.as_array())
-        .map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|s| s.as_str().map(str::to_string))
+                .collect()
+        })
         .unwrap_or_default()
 }
 
 /// `None` when the key is missing or null (AltStore's "don't manage profiles").
 fn string_set(v: &serde_json::Value, key: &str) -> Option<HashSet<String>> {
-    v.get(key).and_then(|x| x.as_array()).map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect())
+    v.get(key).and_then(|x| x.as_array()).map(|a| {
+        a.iter()
+            .filter_map(|s| s.as_str().map(str::to_string))
+            .collect()
+    })
 }
 
 // MARK: - Developer Disk Image, JIT, location

@@ -34,19 +34,32 @@ pub unsafe extern "C" fn icontain_account_session_run(
         *out_json = cstr(msg);
         1
     };
-    let apple_id = match req(apple_id, "Apple ID") { Ok(v) => v, Err(e) => return fail(e) };
-    let password = match req(password, "password") { Ok(v) => v, Err(e) => return fail(e) };
+    let apple_id = match req(apple_id, "Apple ID") {
+        Ok(v) => v,
+        Err(e) => return fail(e),
+    };
+    let password = match req(password, "password") {
+        Ok(v) => v,
+        Err(e) => return fail(e),
+    };
     let anisette = opt(anisette_url, "https://ani.jkcoxson.com");
-    let request: serde_json::Value = serde_json::from_str(&opt(request_json, "{}"))
-        .unwrap_or_else(|_| serde_json::json!({}));
+    let request: serde_json::Value =
+        serde_json::from_str(&opt(request_json, "{}")).unwrap_or_else(|_| serde_json::json!({}));
 
     let session = &*session;
     let (tx, rx) = mpsc::unbounded_channel();
     *session.responder.lock().unwrap() = Some(tx);
     session.cancelled.store(false, Ordering::SeqCst);
-    let cbs = Callbacks { progress: progress_cb, prompt: prompt_cb, ctx };
+    let cbs = Callbacks {
+        progress: progress_cb,
+        prompt: prompt_cb,
+        ctx,
+    };
 
-    let rt = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
+    let rt = match tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+    {
         Ok(rt) => rt,
         Err(e) => return fail(format!("failed to start runtime: {e}")),
     };
@@ -86,7 +99,13 @@ pub(super) async fn run_account(
     replies: Replies,
     cancelled: &AtomicBool,
 ) -> Result<serde_json::Value, String> {
-    let check = || if cancelled.load(Ordering::SeqCst) { Err("Cancelled.".to_string()) } else { Ok(()) };
+    let check = || {
+        if cancelled.load(Ordering::SeqCst) {
+            Err("Cancelled.".to_string())
+        } else {
+            Ok(())
+        }
+    };
 
     cbs.progress("Signing in to Apple…", -1.0);
     let mut dev = sign_in(&apple_id, &password, &anisette, cbs, replies).await?;
@@ -105,7 +124,11 @@ pub(super) async fn run_account(
         let serials: Vec<String> = request
             .get("serials")
             .and_then(|v| v.as_array())
-            .map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|s| s.as_str().map(str::to_string))
+                    .collect()
+            })
             .unwrap_or_default();
         let total = serials.len().max(1) as f64;
         for (i, serial) in serials.iter().enumerate() {
@@ -120,12 +143,23 @@ pub(super) async fn run_account(
     if request.get("op").and_then(|v| v.as_str()) == Some("set_capability") {
         // GetMoreRam: switch a capability (e.g. INCREASED_MEMORY_LIMIT) on or off for
         // App IDs. Apps pick it up the next time they're signed with a fresh profile.
-        let capability = request.get("capability").and_then(|v| v.as_str()).unwrap_or("").to_string();
-        let enabled = request.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
+        let capability = request
+            .get("capability")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let enabled = request
+            .get("enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
         let identifiers: Vec<String> = request
             .get("identifiers")
             .and_then(|v| v.as_array())
-            .map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect())
+            .map(|a| {
+                a.iter()
+                    .filter_map(|s| s.as_str().map(str::to_string))
+                    .collect()
+            })
             .unwrap_or_default();
         if capability.is_empty() {
             return Err("No capability was given.".into());
@@ -205,11 +239,13 @@ pub(super) async fn account_overview(
     let devices = match dev.list_devices(team, None::<DeveloperDeviceType>).await {
         Ok(list) => serde_json::Value::Array(
             list.iter()
-                .map(|d| serde_json::json!({
-                    "name": d.name.clone().unwrap_or_default(),
-                    "udid": d.device_number,
-                    "status": d.status.clone().unwrap_or_default(),
-                }))
+                .map(|d| {
+                    serde_json::json!({
+                        "name": d.name.clone().unwrap_or_default(),
+                        "udid": d.device_number,
+                        "status": d.status.clone().unwrap_or_default(),
+                    })
+                })
                 .collect(),
         ),
         Err(_) => serde_json::Value::Array(Vec::new()),
@@ -257,10 +293,22 @@ pub(super) async fn set_capability(
             }
         }
     });
-    let mut headers = dev.get_headers().await.map_err(|e| err("Couldn't get anisette headers", e))?;
-    headers.insert("Content-Type", "application/vnd.api+json".parse().expect("static header"));
-    headers.insert("Accept", "application/vnd.api+json".parse().expect("static header"));
-    let url = format!("https://developerservices2.apple.com/services/v1/bundleIds/{}", app_id.app_id_id);
+    let mut headers = dev
+        .get_headers()
+        .await
+        .map_err(|e| err("Couldn't get anisette headers", e))?;
+    headers.insert(
+        "Content-Type",
+        "application/vnd.api+json".parse().expect("static header"),
+    );
+    headers.insert(
+        "Accept",
+        "application/vnd.api+json".parse().expect("static header"),
+    );
+    let url = format!(
+        "https://developerservices2.apple.com/services/v1/bundleIds/{}",
+        app_id.app_id_id
+    );
     let response = dev
         .get_grandslam_client()
         .patch(&url)
@@ -277,7 +325,10 @@ pub(super) async fn set_capability(
             .ok()
             .and_then(|v| v["errors"][0]["detail"].as_str().map(str::to_string))
             .unwrap_or_else(|| format!("HTTP {status}"));
-        return Err(format!("Apple wouldn't change {capability} on {}: {detail}", app_id.identifier));
+        return Err(format!(
+            "Apple wouldn't change {capability} on {}: {detail}",
+            app_id.identifier
+        ));
     }
     Ok(())
 }

@@ -21,7 +21,10 @@ pub(super) fn parse_two_factor(reply: &str) -> TwoFactorCallbackResponse {
     if let Some(code) = reply.strip_prefix("code:") {
         return TwoFactorCallbackResponse::SubmitCode(code.trim().to_string());
     }
-    if let Some(id) = reply.strip_prefix("sms:").and_then(|s| s.trim().parse::<u32>().ok()) {
+    if let Some(id) = reply
+        .strip_prefix("sms:")
+        .and_then(|s| s.trim().parse::<u32>().ok())
+    {
         return TwoFactorCallbackResponse::SendSms(id);
     }
     match reply {

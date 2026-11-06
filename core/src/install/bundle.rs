@@ -2,7 +2,11 @@
 
 use super::*;
 
-pub(super) fn prepare_app(ipa_path: &str, udid: &str, server_id: &str) -> Result<(PathBuf, PathBuf), String> {
+pub(super) fn prepare_app(
+    ipa_path: &str,
+    udid: &str,
+    server_id: &str,
+) -> Result<(PathBuf, PathBuf), String> {
     let stamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
@@ -31,7 +35,10 @@ pub(super) fn prepare_app(ipa_path: &str, udid: &str, server_id: &str) -> Result
     let mut info: plist::Dictionary =
         plist::from_file(&info_path).map_err(|e| err("Couldn't read Info.plist", e))?;
     info.insert("ALTDeviceID".into(), plist::Value::String(udid.to_string()));
-    info.insert("ALTServerID".into(), plist::Value::String(server_id.to_string()));
+    info.insert(
+        "ALTServerID".into(),
+        plist::Value::String(server_id.to_string()),
+    );
     plist::to_file_binary(&info_path, &info).map_err(|e| err("Couldn't write Info.plist", e))?;
 
     Ok((work, app_dir))
@@ -42,7 +49,11 @@ pub(super) const ALTSTORE_BETA_BUNDLE_ID: &str = "com.rileytestut.AltStore.Beta"
 pub(super) fn bundle_id_of(app: &Path) -> String {
     plist::from_file::<_, plist::Dictionary>(app.join("Info.plist"))
         .ok()
-        .and_then(|info| info.get("CFBundleIdentifier").and_then(|v| v.as_string()).map(str::to_string))
+        .and_then(|info| {
+            info.get("CFBundleIdentifier")
+                .and_then(|v| v.as_string())
+                .map(str::to_string)
+        })
         .unwrap_or_default()
 }
 
@@ -77,7 +88,11 @@ pub(super) async fn enable_capabilities(
         .list_app_ids(team, None::<DeveloperDeviceType>)
         .await
         .map_err(|e| err("Couldn't list App IDs", e))?;
-    let app_id = match existing.app_ids.into_iter().find(|a| a.identifier == identifier) {
+    let app_id = match existing
+        .app_ids
+        .into_iter()
+        .find(|a| a.identifier == identifier)
+    {
         Some(app_id) => app_id,
         None => dev
             .add_app_id(team, &name, &identifier, None::<DeveloperDeviceType>)
@@ -116,8 +131,14 @@ pub(super) async fn enable_capabilities(
             .get_headers()
             .await
             .map_err(|e| err("Couldn't get anisette headers", e))?;
-        headers.insert("Content-Type", "application/vnd.api+json".parse().expect("static header"));
-        headers.insert("Accept", "application/vnd.api+json".parse().expect("static header"));
+        headers.insert(
+            "Content-Type",
+            "application/vnd.api+json".parse().expect("static header"),
+        );
+        headers.insert(
+            "Accept",
+            "application/vnd.api+json".parse().expect("static header"),
+        );
 
         let url = format!(
             "https://developerservices2.apple.com/services/v1/bundleIds/{}",
@@ -151,7 +172,12 @@ pub(super) async fn enable_capabilities(
 /// ALTAppGroups (the group isideload registers, `group.<bundle id>.<team>`),
 /// ALTCertificateID and ALTCertificate.p12 (password: the certificate's machine ID).
 /// Runs before `sign_app`, which reads the bundle from disk, so it all gets signed.
-pub(super) async fn inject_store_keys(app: &Path, bundle_id: &str, team_id: &str, cert: &CertificateIdentity) -> Result<(), String> {
+pub(super) async fn inject_store_keys(
+    app: &Path,
+    bundle_id: &str,
+    team_id: &str,
+    cert: &CertificateIdentity,
+) -> Result<(), String> {
     let info_path = app.join("Info.plist");
     let mut info: plist::Dictionary =
         plist::from_file(&info_path).map_err(|e| err("Couldn't read Info.plist", e))?;
@@ -185,7 +211,11 @@ pub(super) fn read_installed(app: &Path) -> Installed {
     };
     let name = {
         let d = s("CFBundleDisplayName");
-        if d.is_empty() { s("CFBundleName") } else { d }
+        if d.is_empty() {
+            s("CFBundleName")
+        } else {
+            d
+        }
     };
 
     let (expiration_unix, team_id) = read_profile(&app.join("embedded.mobileprovision"));
@@ -208,7 +238,8 @@ pub(super) fn read_profile(path: &Path) -> (i64, String) {
     let (Some(start), Some(end)) = (find(b"<?xml"), find(b"</plist>")) else {
         return (0, String::new());
     };
-    let Ok(dict) = plist::from_bytes::<plist::Dictionary>(&bytes[start..end + b"</plist>".len()]) else {
+    let Ok(dict) = plist::from_bytes::<plist::Dictionary>(&bytes[start..end + b"</plist>".len()])
+    else {
         return (0, String::new());
     };
     let expiration = dict

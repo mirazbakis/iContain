@@ -45,8 +45,8 @@ use isideload::dev::developer_session::DeveloperSession;
 use isideload::dev::device_type::DeveloperDeviceType;
 use isideload::dev::devices::DevicesApi;
 use isideload::dev::teams::{DeveloperTeam, TeamsApi};
-use isideload::sideload::builder::MaxCertsBehavior;
 use isideload::sideload::application::SpecialApp;
+use isideload::sideload::builder::MaxCertsBehavior;
 use isideload::sideload::cert_identity::CertificateIdentity;
 use isideload::sideload::{SideloaderBuilder, TeamSelection};
 use isideload::util::keyring_storage::KeyringStorage;
@@ -426,7 +426,14 @@ async fn run_install(
     // 1. Apple ID first, so a sign-in problem shows up straight away instead of
     // after the device link, and 2FA is done before anything touches the device.
     cbs.progress("Signing in to Apple…", -1.0);
-    let dev_session = sign_in(&cfg.apple_id, &cfg.password, &cfg.anisette_url, cbs, replies.clone()).await?;
+    let dev_session = sign_in(
+        &cfg.apple_id,
+        &cfg.password,
+        &cfg.anisette_url,
+        cbs,
+        replies.clone(),
+    )
+    .await?;
     check()?;
 
     // 2. Tunnel to this device.
@@ -443,7 +450,18 @@ async fn run_install(
     // 3. Unpack the IPA and add AltStore's device keys.
     cbs.progress("Preparing the app…", -1.0);
     let (work_dir, app_dir) = prepare_app(&cfg.ipa_path, &udid, &cfg.server_id)?;
-    let result = sign_and_install(&cfg, dev_session, cbs, replies, &check, &udid, app_dir, &mut adapter, &mut handshake).await;
+    let result = sign_and_install(
+        &cfg,
+        dev_session,
+        cbs,
+        replies,
+        &check,
+        &udid,
+        app_dir,
+        &mut adapter,
+        &mut handshake,
+    )
+    .await;
     let _ = std::fs::remove_dir_all(&work_dir);
     result
 }
@@ -470,7 +488,11 @@ async fn sign_and_install(
             cbs.prompt(PROMPT_REVOKE_CERTS, &json);
             let reply = replies.lock().await.recv().await.unwrap_or_default();
             let serials: Vec<String> = serde_json::from_str(&reply).unwrap_or_default();
-            Ok::<_, rootcause::Report>(if serials.is_empty() { None } else { Some(serials) })
+            Ok::<_, rootcause::Report>(if serials.is_empty() {
+                None
+            } else {
+                Some(serials)
+            })
         }
     };
 
@@ -519,7 +541,13 @@ async fn sign_and_install(
     // so the provisioning profile sign_app downloads grants their entitlements.
     if !cfg.capabilities.is_empty() {
         cbs.progress("Enabling entitlements…", -1.0);
-        enable_capabilities(sideloader.get_dev_session(), &team, &app_dir, &cfg.capabilities).await?;
+        enable_capabilities(
+            sideloader.get_dev_session(),
+            &team,
+            &app_dir,
+            &cfg.capabilities,
+        )
+        .await?;
         check()?;
     }
 
@@ -550,7 +578,14 @@ async fn sign_and_install(
         sideloader
             // No pairing file: that's for AltStore's remote-AltServer setup, and iContain
             // is AltStore's AltServer itself. The UDID matches the ALTDeviceID we wrote.
-            .sign_app(app_dir, Some(team.clone()), false, Some(sign_progress), None, Some(udid))
+            .sign_app(
+                app_dir,
+                Some(team.clone()),
+                false,
+                Some(sign_progress),
+                None,
+                Some(udid),
+            )
             .await
             .map_err(|e| err("Signing failed", e))?
             .0
@@ -559,9 +594,14 @@ async fn sign_and_install(
 
     // 6. AFC upload + installation_proxy, through the tunnel.
     cbs.progress("Installing…", 0.0);
-    isideload::sideload::install::install_app_rsd(adapter, handshake, &signed_dir, move |p: u64| {
-        cbs.progress("Installing…", (p as f64 / 100.0).clamp(0.0, 1.0));
-    })
+    isideload::sideload::install::install_app_rsd(
+        adapter,
+        handshake,
+        &signed_dir,
+        move |p: u64| {
+            cbs.progress("Installing…", (p as f64 / 100.0).clamp(0.0, 1.0));
+        },
+    )
     .await
     .map_err(|e| err("Install failed", e))?;
 

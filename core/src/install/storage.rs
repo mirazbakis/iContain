@@ -20,13 +20,22 @@ impl FileStorage {
             .join("Library/Application Support/iContain")
             .join(sub);
         let _ = std::fs::create_dir_all(&dir);
-        Self { dir, legacy: legacy_service.map(|s| KeyringStorage::new(s.to_string())) }
+        Self {
+            dir,
+            legacy: legacy_service.map(|s| KeyringStorage::new(s.to_string())),
+        }
     }
 
     fn path(&self, key: &str) -> PathBuf {
         let safe: String = key
             .chars()
-            .map(|c| if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' { c } else { '_' })
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
             .collect();
         self.dir.join(safe)
     }
@@ -47,7 +56,10 @@ impl SideloadingStorage for FileStorage {
             Err(_) => {}
         }
         // Older iContain builds kept this in the Keychain. Move it over if it's readable.
-        let old = self.legacy.as_ref().and_then(|k| k.retrieve(key).ok().flatten());
+        let old = self
+            .legacy
+            .as_ref()
+            .and_then(|k| k.retrieve(key).ok().flatten());
         if let Some(v) = &old {
             let _ = std::fs::write(self.path(key), v);
         }
