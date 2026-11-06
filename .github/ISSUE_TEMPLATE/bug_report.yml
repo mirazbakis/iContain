@@ -18,7 +18,7 @@ body:
     id: versions
     attributes:
       label: iContain version, iPhone or iPad model, iOS version
-      placeholder: "0.1.0, iPhone 17 Pro, iOS 27.1"
+      placeholder: "1.0.0, iPhone 17 Pro, iOS 27.1"
     validations:
       required: true
   - type: textarea

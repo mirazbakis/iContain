@@ -32,7 +32,7 @@ I made iContain to test apps on the device I'm actually holding. It loads an imp
 - Every app shares iContain's one App ID, so a free Apple ID's limits don't apply
 - More RAM: switch on the Increased Memory Limit for your App IDs
 
-It's version 0.1, so expect rough edges. Bug reports welcome.
+It's the first release, so bug reports are very welcome.
 
 Site: https://mirazbakis.github.io/iContain/
 Source (MIT): https://github.com/mirazbakis/iContain

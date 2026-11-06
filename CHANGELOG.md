@@ -4,9 +4,9 @@ Notable changes to iContain. Release notes for each version are in [docs/release
 
 ## Unreleased
 
-## 0.1.0
+## 1.0.0
 
-First version.
+First release.
 
 - Run imported apps inside iContain: `.ipa`, `.xcarchive`, zipped `.app`, and builds made for the iOS Simulator
 - Test mode: run an app as another iPhone or iPad, in light or dark mode

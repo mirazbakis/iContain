@@ -16,7 +16,7 @@
 </div>
 
 > [!NOTE]
-> iContain is early (0.x). It has been tested in the iOS Simulator; testing on real devices is in progress. Expect rough edges, and please [report what breaks](https://github.com/mirazbakis/iContain/issues/new/choose).
+> This is iContain's first release. If something doesn't work on your device, please [report it](https://github.com/mirazbakis/iContain/issues/new/choose).
 
 ## What it does
 
