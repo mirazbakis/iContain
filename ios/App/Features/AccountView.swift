@@ -137,7 +137,7 @@ struct AccountView: View {
                 SignInSheet { credentials in afterSignIn?(credentials) }
             }
             .fileImporter(isPresented: $pickingCertificate,
-                          allowedContentTypes: [UTType(filenameExtension: "p12") ?? .data, .data]) { result in
+                          allowedContentTypes: [.pkcs12, UTType(filenameExtension: "p12", conformingTo: .data) ?? .data, .data]) { result in
                 if case .success(let url) = result {
                     certificatePassword = ""
                     certificateFile = url

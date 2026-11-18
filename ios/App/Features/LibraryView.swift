@@ -6,13 +6,21 @@ struct LibraryView: View {
     @State private var importing = false
     @State private var selected: Guest?
 
-    private static let importTypes: [UTType] = [
-        UTType(filenameExtension: "ipa") ?? .zip,
-        .zip,
-        UTType(filenameExtension: "xcarchive") ?? .package,
-        .applicationBundle,
-        .folder,
-    ]
+    /// File types the Import picker offers. Every .ipa must be selectable, whatever type
+    /// iOS tagged it with: the declared com.apple.itunes.ipa type (Info.plist
+    /// UTImportedTypeDeclarations), the type the "ipa" extension resolves to, and plain
+    /// zip/data as a fallback. Never list .folder here: it switches the picker into folder
+    /// selection, so folders can't be opened to reach the .ipa inside.
+    private static let importTypes: [UTType] = {
+        var types: [UTType] = [UTType(importedAs: "com.apple.itunes.ipa", conformingTo: .zip)]
+        for ext in ["ipa", "xcarchive"] {
+            if let t = UTType(filenameExtension: ext) { types.append(t) }
+            types.append(UTType(filenameExtension: ext, conformingTo: .data) ?? .data)
+        }
+        types += [.zip, .archive, .data]
+        var seen = Set<String>()
+        return types.filter { seen.insert($0.identifier).inserted }
+    }()
 
     var body: some View {
         NavigationStack {
