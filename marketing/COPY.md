@@ -3,7 +3,7 @@
 Images are in `site/ads/` (made from `marketing/ad.html` with `scripts/render-ads.sh`):
 `og.png` 1200×630 for link previews, `square.png` 1080×1080 for posts, `story.png` 1080×1920 for stories.
 
-Link: https://mirazbakis.github.io/iContain/
+Link: https://mirazbakis.com/iContain/
 
 ## Taglines
 
@@ -18,7 +18,7 @@ Meet iContain: run apps inside one app on your iPhone, including builds made for
 
 Test as any iPhone or iPad, fake your location, no App ID limits. Free and open source.
 
-https://mirazbakis.github.io/iContain/
+https://mirazbakis.com/iContain/
 
 ## Longer post (Reddit, forums)
 
@@ -34,7 +34,7 @@ I made iContain to test apps on the device I'm actually holding. It loads an imp
 
 It's the first release, so bug reports are very welcome.
 
-Site: https://mirazbakis.github.io/iContain/
+Site: https://mirazbakis.com/iContain/
 Source (MIT): https://github.com/mirazbakis/iContain
 
 ## Story text

@@ -1,6 +1,6 @@
 name: Website
 
-# Publishes site/ to GitHub Pages (https://mirazbakis.github.io/iContain/) whenever
+# Publishes site/ to GitHub Pages (https://mirazbakis.com/iContain/) whenever
 # it changes on main. One-time setup: Settings › Pages › Source: GitHub Actions.
 on:
   push:
